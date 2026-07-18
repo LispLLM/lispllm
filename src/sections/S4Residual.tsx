@@ -1,5 +1,6 @@
 /** §4 — "The residual stream." Contribution norms + the ablation lab. */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNearViewport } from '../components/useNearViewport';
 import Cite from '../components/Cite';
 import CodePanel from '../components/CodePanel';
 import KernelRef from '../components/KernelRef';
@@ -14,6 +15,7 @@ export default function S4Residual() {
   const dims = img.checkpoint.manifest.dims;
   const [helpFor, setHelpFor] = useState<string | null>(null);
   const [baseline, setBaseline] = useState<{ text: string; nll: number } | null>(null);
+  const { ref: sectionRef, visible } = useNearViewport<HTMLElement>();
 
   const focus = focusString || 'To be, or not to be';
 
@@ -40,8 +42,7 @@ export default function S4Residual() {
     return set;
   }, [img, imageVersion]);
 
-  const current = useMemo(() => {
-    void imageVersion;
+  const computeContinuation = () => {
     try {
       let text = focus;
       for (let i = 0; i < CONT_CHARS; i++) text += img.tokenizer.decode([img.greedyNext(text)]);
@@ -49,10 +50,26 @@ export default function S4Residual() {
     } catch {
       return null;
     }
-  }, [img, focus, imageVersion]);
+  };
+
+  const current = useMemo(() => {
+    void imageVersion;
+    if (!visible) return null;
+    return computeContinuation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [img, focus, imageVersion, visible]);
+
+  // remember the un-ablated continuation as the baseline for the diff
+  useEffect(() => {
+    if (current && ablated.size === 0) setBaseline(current);
+  }, [current, ablated]);
 
   const toggle = (l: number, h: number) => {
-    if (ablated.size === 0 && current && !baseline) setBaseline(current);
+    // capture the un-ablated baseline now if the deferred compute hasn't run yet
+    if (ablated.size === 0 && !baseline) {
+      const c = current ?? computeContinuation();
+      if (c) setBaseline(c);
+    }
     const next = new Set(ablated);
     const key = `${l}.${h}`;
     if (next.has(key)) next.delete(key);
@@ -70,7 +87,7 @@ export default function S4Residual() {
   const ppl = (nll: number) => Math.exp(nll);
 
   return (
-    <section id="sec-4" className="mx-auto max-w-measure px-4 py-16 font-mono">
+    <section ref={sectionRef} id="sec-4" className="mx-auto max-w-measure px-4 py-16 font-mono">
       <h2 className="mb-4 text-xl text-paper">;; §4 the residual stream</h2>
       <p className="mb-4 text-sm leading-6 text-dim">
         Layers don't replace the representation; they add to it. Each block reads from a shared

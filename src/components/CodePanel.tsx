@@ -133,7 +133,7 @@ export default function CodePanel({
       <span key={key}>
         {parts.map((p, i) =>
           p.startsWith(';') ? (
-            <span key={i} className="text-[#6b675e] italic">
+            <span key={i} className="text-dim italic">
               {p}
             </span>
           ) : (
@@ -239,7 +239,10 @@ export default function CodePanel({
   };
 
   return (
-    <div data-testid={testId} className="rounded border border-edge bg-panel p-4">
+    <div
+      data-testid={testId}
+      className="min-w-0 max-w-full rounded border border-edge bg-panel p-4"
+    >
       <pre
         className={`overflow-x-auto whitespace-pre font-mono ${dense ? 'text-xs leading-5' : 'text-sm leading-6'}`}
         onMouseLeave={() => hoverNode(null)}

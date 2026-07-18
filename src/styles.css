@@ -36,3 +36,25 @@ body {
 .cursor-blink {
   animation: blink 1.1s step-end infinite;
 }
+
+/* §6: print = just the model, black on white */
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+  header,
+  section:not(#sec-6),
+  [data-testid='repl-drawer'],
+  [data-testid='toast'],
+  #sec-6 button,
+  #sec-6 input {
+    display: none !important;
+  }
+  .print-code,
+  .print-code * {
+    color: #000 !important;
+    background: #fff !important;
+    border-color: #999 !important;
+  }
+}

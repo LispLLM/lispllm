@@ -1,5 +1,6 @@
 /** §5 — "Temperature is one number in the code." */
 import { useMemo, useState } from 'react';
+import { useNearViewport } from '../components/useNearViewport';
 import type { Ast } from '../lisp/types';
 import { isTensor } from '../lisp/types';
 import Cite from '../components/Cite';
@@ -37,6 +38,7 @@ export default function S5Temperature() {
   const { imageVersion, focusString, knobEdits } = useAppState();
   const img = getImage();
   const [helpFor, setHelpFor] = useState<string | null>(null);
+  const { ref: sectionRef, visible } = useNearViewport<HTMLElement>();
 
   const tempSpan = useMemo(() => img.canonicalSpanFor('temperature'), [img]);
   const scaleExpr = useMemo(() => findScaleExpr(img), [img]);
@@ -59,9 +61,11 @@ export default function S5Temperature() {
     }
   }, [img, focus, imageVersion]);
 
-  // three parallel samples at fixed temperatures (seeded, native kernels only)
+  // three parallel samples at fixed temperatures (seeded, native kernels only);
+  // deferred until the section scrolls near the viewport to keep boot fast
   const samples = useMemo(() => {
     void imageVersion;
+    if (!visible) return null;
     try {
       return TEMPS.map((T) => {
         const rng = new Rng(42);
@@ -78,7 +82,7 @@ export default function S5Temperature() {
     } catch {
       return null;
     }
-  }, [img, focus, imageVersion]);
+  }, [img, focus, imageVersion, visible]);
 
   const setTemp = (t: number) => {
     if (tempSpan == null) return;
@@ -95,7 +99,7 @@ export default function S5Temperature() {
   };
 
   return (
-    <section id="sec-5" className="mx-auto max-w-measure px-4 py-16 font-mono">
+    <section ref={sectionRef} id="sec-5" className="mx-auto max-w-measure px-4 py-16 font-mono">
       <h2 className="mb-4 text-xl text-paper">;; §5 temperature is one number in the code</h2>
       <p className="mb-4 text-sm leading-6 text-dim">
         Before sampling, the logits are divided by <span className="text-paper">temperature</span>
@@ -107,7 +111,7 @@ export default function S5Temperature() {
         image.
       </p>
 
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <label htmlFor="s5-knob" className="text-sm text-dim">
           temperature
         </label>
@@ -119,7 +123,7 @@ export default function S5Temperature() {
           max={3}
           step={0.05}
           value={temperature}
-          className="w-64 accent-amber"
+          className="w-64 max-w-full accent-amber"
           onChange={(e) => setTemp(Number(e.target.value))}
         />
         <span className="text-amber" data-testid="s5-temp-value">

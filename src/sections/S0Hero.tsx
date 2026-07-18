@@ -85,7 +85,7 @@ export default function S0Hero() {
       <div className="mt-8 grid gap-6 md:grid-cols-2">
         <CodePanel forms={['temperature', 'next-token', 'generate']} testId="hero-code" />
         <div>
-          <div className="mb-2 flex items-center gap-3 text-sm">
+          <div className="mb-2 flex flex-wrap items-center gap-3 text-sm">
             <button
               data-testid="hero-toggle"
               className="rounded border border-edge px-3 py-1 text-paper hover:border-amber"
@@ -111,7 +111,7 @@ export default function S0Hero() {
                 min={2}
                 max={30}
                 value={speed}
-                className="accent-amber"
+                className="max-w-24 accent-amber"
                 onChange={(e) => setSpeed(Number(e.target.value))}
               />
             </label>

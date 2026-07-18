@@ -9,11 +9,14 @@ import S3Attention from './sections/S3Attention';
 import S4Residual from './sections/S4Residual';
 import S5Temperature from './sections/S5Temperature';
 import S6WholeModel from './sections/S6WholeModel';
+import S7Playground from './sections/S7Playground';
+import S8Scale from './sections/S8Scale';
 import { Image } from './model/image';
 import { dequantize } from './model/load';
 import type { Manifest } from './model/load';
 import {
   resetImage,
+  restoreState,
   setImage,
   setLoadError,
   setLoading,
@@ -21,6 +24,7 @@ import {
   setToast,
   useAppState,
 } from './store/app-store';
+import { decodeShare } from './store/share';
 
 const CKPT = '/checkpoints/shakespeare-quick';
 
@@ -58,6 +62,12 @@ async function boot(): Promise<void> {
 /** #s= (share state, §12.4) > #ref-n > #sec-n */
 function handleHash(): void {
   const h = location.hash;
+  const shared = decodeShare(h);
+  if (shared) {
+    restoreState(shared.seed, shared.knobEdits, shared.replHistory);
+    setToast('restored shared state');
+    return;
+  }
   const ref = /^#ref-(\d+)$/.exec(h);
   if (ref) {
     setRefsOpen(true, Number(ref[1]));
@@ -106,13 +116,17 @@ export default function App() {
   return (
     <div id="top" className="pb-24">
       <Header />
-      <S0Hero />
-      <S1NextChar />
-      <S2Embeddings />
-      <S3Attention />
-      <S4Residual />
-      <S5Temperature />
-      <S6WholeModel />
+      <main>
+        <S0Hero />
+        <S1NextChar />
+        <S2Embeddings />
+        <S3Attention />
+        <S4Residual />
+        <S5Temperature />
+        <S6WholeModel />
+        <S7Playground />
+        <S8Scale />
+      </main>
       <RefsPanel />
       {toast && (
         <div

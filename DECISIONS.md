@@ -186,3 +186,38 @@ scores))` in `head`) evaluates 12 times per forward pass — once per layer×hea
   REPL sheet covers the grid.
 
 Exit gate: e2e 1–8 green on chromium + iphone-se; bundle 71 KB gz.
+
+## M6 — Playground, scale, share codec, polish
+
+Built: §7 playground (example chips, environment browser over the live image env, trace
+inspector rendering model.lisp as a tree with per-node traced tensors); §8 honest scale
+section (BPE / KV cache / RLHF / MoE prose, log-scale parameter bar computed from the
+manifest); share codec (`src/store/share.ts`, base64url JSON `#s=` fragment carrying seed,
+knob edits, REPL history — oldest history entries dropped until the hash fits 2048 chars);
+header share button (clipboard + toast); `#s=` restore on boot; print stylesheet for §6;
+vercel.json with immutable cache headers; README with train-your-own instructions and a
+Show HN draft; e2e 9–11.
+
+Decisions / fixes:
+
+- **Mobile overflow**: grid/flex items needed `min-w-0` (CodePanel wrapper, REPL textarea,
+  §7 panels) and control rows needed `flex-wrap` (§0 controls, §5 knob row). Root cause:
+  CSS grid/flex `min-width: auto` lets pre/textarea intrinsic width propagate past the
+  viewport even under `overflow-x-auto`.
+- **Header** raised to `z-[60]` so the mobile REPL sheet (z-50) cannot intercept header
+  clicks; header row wraps on narrow screens.
+- **Perf**: boot originally ran ~200 forward passes eagerly (§4 greedy continuation, §5
+  three temperature samples) → Lighthouse desktop perf 51–62, TBT ~10 s. Added
+  `useNearViewport` (IntersectionObserver, 400px margin) to defer §4/§5 generation until
+  scrolled near. §4 keeps a synchronous baseline capture in `toggle` so ablating before
+  the deferred compute has run still records the un-ablated baseline.
+- **A11y**: added `<main>` landmark, aria-label on §1 textarea, replaced low-contrast
+  comment/note colors with text-dim, min-h-6 tap targets in the env browser.
+
+Measured (local static build, Lighthouse 13, headless Chrome, desktop preset):
+performance 100, accessibility 100, TBT 20 ms, TTI 0.8 s. Bundle 72.1 KB gz (limit 350).
+Unit tests 71 passed; e2e 21 passed + 1 skipped (test 11 is mobile-only) on chromium +
+iphone-se. Copy audit: no banned words, no exclamation points.
+
+Exit gate (§19 Definition of Done): all budgets PASS; one image; code-is-truth echoes;
+kernel refs honest; offline after load; deterministic under seed 1337.

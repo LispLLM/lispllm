@@ -35,6 +35,7 @@ export default function S1NextChar() {
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <textarea
           data-testid="s1-input"
+          aria-label="prompt text"
           value={input}
           rows={4}
           spellCheck={false}

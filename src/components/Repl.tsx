@@ -153,7 +153,7 @@ export default function Repl() {
           rows={Math.min(6, input.split('\n').length)}
           spellCheck={false}
           placeholder="(help) lists primitives — everything on this page is in scope"
-          className="flex-1 resize-none bg-transparent font-mono text-sm text-paper outline-none placeholder:text-dim/60"
+          className="min-w-0 flex-1 resize-none bg-transparent font-mono text-sm text-paper outline-none placeholder:text-dim/60"
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           onFocus={() => !replOpen && setReplOpen(true)}

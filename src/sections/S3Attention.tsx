@@ -158,7 +158,7 @@ export default function S3Attention() {
       </div>
 
       {hit ? (
-        <div className="mb-4 space-y-2">
+        <div className="mb-4 space-y-2 overflow-x-auto">
           <div className="text-xs text-dim">keys (attended to) →</div>
           {strip('k')}
           <div className={`relative inline-block ${weightsHover ? 'ring-2 ring-amber' : ''}`}>
