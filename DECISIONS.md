@@ -39,7 +39,7 @@ All §7 core builtins live in env.ts (`installCoreBuiltins`). Terminal REPL: `pn
 
 Key design decision: **the printer is source-splicing.** A parsed Program keeps its exact
 source text; printing splices edited node lexemes into it by span. This makes read∘print a
-fixpoint on model.lisp *by construction*, keeps comments/layout intact, and gives stable
+fixpoint on model.lisp _by construction_, keeps comments/layout intact, and gives stable
 node→span mapping under knob edits (INV-2). Synthetic ASTs and REPL values use a fresh
 printer (4-sig-fig floats, `…` elision after 12 elements).
 
@@ -50,3 +50,22 @@ Choices logged per §1.6: `nth` is `(nth i lst)`; `eq?` is structural (needed fo
 Exit gate: 36 unit tests green (15 reader, 15 eval incl. 50k tail-call loop, 5 printer incl.
 model.lisp fixpoint + AST-edit splice stability). Lint clean. REPL smoke test:
 `(display "hello from lisp") (+ 1 2)` → `hello from lisp` / `3`.
+
+## M2 — Tensors
+
+Built: `src/tensor/{tensor,kernels,rng,bindings}.ts` + `public/kernels-ref.lisp`.
+All §8 kernels with normative formulas (softmax max-subtracted row-wise; layernorm eps 1e-5;
+gelu tanh approximation; causal-mask −1e9; matmul k-innermost with preallocated output).
+mulberry32 PRNG (`Rng`) lives in the image; `sample` = softmax + categorical draw from it.
+
+Deviations (logged per §1.3/§1.6):
+
+- Added `src/tensor/bindings.ts` (Lisp bindings for kernels) beyond the three-file §16
+  layout — keeps kernels pure-TS and testable in isolation.
+- `sample-ref` takes the uniform draw `u` explicitly (pure function); equivalence test feeds
+  the same `u` the native kernel draws from the seeded PRNG.
+- Added `ln-g`/`ln-b` accessor builtins so the Lisp layernorm reference can reach the params.
+- `top-k` kernel included now (needed by §5's toggle) with a Lisp reference.
+
+Exit gate: 64 unit tests green — 13 native kernel tests + 15 equivalence tests (3 random
+shapes per op, |Δ| < 1e-5; layernorm/gelu at 1e-4 for float32 vs Lisp double-precision math).
