@@ -19,21 +19,30 @@ export interface TraceEntry {
 export interface Trace {
   /** node id → latest recorded value + context */
   entries: Map<number, TraceEntry>;
+  /** node id + layer/head context → value (same node evaluates once per head) */
+  byContext: Map<string, TraceEntry>;
   focus: string;
+}
+
+export function contextKey(nodeId: number, layerId?: number, headId?: number): string {
+  return `${nodeId}:${layerId ?? ''}:${headId ?? ''}`;
 }
 
 class RecordingTracer implements Tracer {
   entries = new Map<number, TraceEntry>();
+  byContext = new Map<string, TraceEntry>();
   private layerStack: number[] = [];
   private headStack: number[] = [];
   private frames: Array<{ layers: number; heads: number }> = [];
 
   onValue(node: Ast, value: Value): void {
-    this.entries.set(node.id, {
-      value,
-      layerId: this.layerStack.length ? this.layerStack[this.layerStack.length - 1] : undefined,
-      headId: this.headStack.length ? this.headStack[this.headStack.length - 1] : undefined,
-    });
+    const layerId = this.layerStack.length
+      ? this.layerStack[this.layerStack.length - 1]
+      : undefined;
+    const headId = this.headStack.length ? this.headStack[this.headStack.length - 1] : undefined;
+    const entry = { value, layerId, headId };
+    this.entries.set(node.id, entry);
+    this.byContext.set(contextKey(node.id, layerId, headId), entry);
   }
 
   onApplyEnter(_fn: Value, args: Value[]): void {
@@ -72,7 +81,7 @@ export function withTrace<T>(focus: string, fn: () => T): { result: T; trace: Tr
   setTracer(t);
   try {
     const result = fn();
-    return { result, trace: { entries: t.entries, focus } };
+    return { result, trace: { entries: t.entries, byContext: t.byContext, focus } };
   } finally {
     setTracer(null);
   }

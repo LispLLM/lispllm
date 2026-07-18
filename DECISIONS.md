@@ -154,3 +154,35 @@ Measured (Node, Apple Silicon; spec budgets in parens):
 - bundle: 61.1 KB gz (≤ 350 KB)
 
 Exit gate: e2e 1–3 green on chromium + iphone-se (6/6); all 67 unit tests green.
+
+## M5 — Full narrative (§2–§6, references, hash routing)
+
+Built: `src/model/queries.ts`, `src/content/references.ts`,
+`src/components/{RefsPanel,KernelRef}.tsx`, `src/sections/{S2Embeddings,S3Attention,
+S4Residual,S5Temperature,S6WholeModel}.tsx`, hash handling (`#ref-n` > `#sec-n`),
+e2e tests 4–8.
+
+Decisions:
+
+- **Trace entries are context-keyed.** One AST node (e.g. the `(softmax (causal-mask
+scores))` in `head`) evaluates 12 times per forward pass — once per layer×head — so a
+  node-id map only kept the last. `Trace.byContext` keys entries by `nodeId:layerId:headId`;
+  §3/§4 queries read through it. Structural queries find nodes by source prefix in the
+  _current_ program, so they survive knob edits.
+- §3 bidirectional linking: heatmap hover sets exactly two `data-hl` token chips (query +
+  key) and highlights the softmax node; hovering `causal-mask` in the code overlays the
+  masked triangle; per-position source-contribution bars use traced weights × ‖v‖ (both
+  tensors read from the trace, no re-computation).
+- §4 ablation echoes `(set! ablated '(…))` through the normal REPL path (INV-2); before/after
+  continuations are greedy (deterministic); perplexity delta from a single `gpt` forward.
+- §5 knob and the draggable `0.8` literal both route through the same span-addressed KnobEdit;
+  `(set! temperature …)` in the REPL moves the knob because the knob renders `(lookup
+'temperature)`. Top-k toggle wraps/unwraps `(top-k 40 …)` around the sample argument as a
+  KnobEdit — visible in §5 and §6 (one image). The three fixed-T comparison samples use a
+  local fixed-seed PRNG with the native kernels (projection; image PRNG untouched, INV-6).
+- §6 param shares are computed from the manifest tensor table by name pattern; line/define
+  counts from the current program AST — nothing hardcoded.
+- e2e 6 clicks the ablation toggle before opening the REPL: on the iPhone SE viewport the
+  REPL sheet covers the grid.
+
+Exit gate: e2e 1–8 green on chromium + iphone-se; bundle 71 KB gz.

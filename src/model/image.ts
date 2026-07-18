@@ -210,6 +210,35 @@ export class Image {
   decodeList(v: Value): string {
     return this.tokenizer.decode(listToArray(v).map((x) => x as number));
   }
+
+  /** Read-only access to the canonical (unedited) program for span addressing. */
+  get canonicalForms(): Ast[] {
+    return this.canonical.forms;
+  }
+
+  get canonicalSource(): string {
+    return this.canonical.source;
+  }
+
+  /** Mean negative log-likelihood per character of `text` (one forward pass). */
+  nll(text: string): number {
+    const ctx = this.checkpoint.manifest.ctx;
+    const tokens = this.tokenizer.encode(text).slice(-ctx);
+    if (tokens.length < 2) return NaN;
+    const out = this.call('gpt', list(...tokens));
+    if (!isTensor(out)) throw new LispError('gpt did not return a tensor');
+    const V = out.shape[1];
+    let total = 0;
+    for (let i = 0; i < tokens.length - 1; i++) {
+      const row = out.data.subarray(i * V, (i + 1) * V);
+      let max = -Infinity;
+      for (let j = 0; j < V; j++) if (row[j] > max) max = row[j];
+      let sum = 0;
+      for (let j = 0; j < V; j++) sum += Math.exp(row[j] - max);
+      total -= row[tokens[i + 1]] - max - Math.log(sum);
+    }
+    return total / (tokens.length - 1);
+  }
 }
 
 function findNodeAt(forms: Ast[], at: number): Ast | null {

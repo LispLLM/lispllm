@@ -1,8 +1,14 @@
 import { useEffect } from 'react';
 import Header from './components/Header';
 import Repl from './components/Repl';
+import RefsPanel from './components/RefsPanel';
 import S0Hero from './sections/S0Hero';
 import S1NextChar from './sections/S1NextChar';
+import S2Embeddings from './sections/S2Embeddings';
+import S3Attention from './sections/S3Attention';
+import S4Residual from './sections/S4Residual';
+import S5Temperature from './sections/S5Temperature';
+import S6WholeModel from './sections/S6WholeModel';
 import { Image } from './model/image';
 import { dequantize } from './model/load';
 import type { Manifest } from './model/load';
@@ -11,6 +17,7 @@ import {
   setImage,
   setLoadError,
   setLoading,
+  setRefsOpen,
   setToast,
   useAppState,
 } from './store/app-store';
@@ -45,6 +52,20 @@ async function boot(): Promise<void> {
   const ckpt = dequantize(manifest, bin.buffer);
   const img = new Image(ckpt, await (await fetch('/model.lisp')).text(), 1337);
   setImage(img);
+  handleHash();
+}
+
+/** #s= (share state, §12.4) > #ref-n > #sec-n */
+function handleHash(): void {
+  const h = location.hash;
+  const ref = /^#ref-(\d+)$/.exec(h);
+  if (ref) {
+    setRefsOpen(true, Number(ref[1]));
+    return;
+  }
+  if (/^#sec-\d+$/.test(h)) {
+    requestAnimationFrame(() => document.querySelector(h)?.scrollIntoView());
+  }
 }
 
 let booted = false;
@@ -87,6 +108,12 @@ export default function App() {
       <Header />
       <S0Hero />
       <S1NextChar />
+      <S2Embeddings />
+      <S3Attention />
+      <S4Residual />
+      <S5Temperature />
+      <S6WholeModel />
+      <RefsPanel />
       {toast && (
         <div
           data-testid="toast"
