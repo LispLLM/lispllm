@@ -18,6 +18,7 @@ import {
 import { decodeShare } from './store/share';
 import { setActiveLesson, setRightTab } from './store/workspace-store';
 import PersistenceBridge, { restoreLocalSourceState } from './store/persistence';
+import { shallowEqual } from './store/selector';
 
 const CKPT = '/checkpoints/shakespeare-quick';
 
@@ -93,13 +94,28 @@ function handleHash(): void {
 let booted = false;
 
 export default function App() {
-  const { status, loadedBytes, totalBytes, error, toast } = useAppState();
+  const { status, loadedBytes, totalBytes, error, toast } = useAppState(
+    (current) => ({
+      status: current.status,
+      loadedBytes: current.loadedBytes,
+      totalBytes: current.totalBytes,
+      error: current.error,
+      toast: current.toast,
+    }),
+    shallowEqual,
+  );
 
   useEffect(() => {
     if (booted) return;
     booted = true;
     boot().catch((err) => setLoadError(err instanceof Error ? err.message : String(err)));
   }, []);
+
+  useEffect(() => {
+    if (!toast || !/(share link copied|state JSON copied)/i.test(toast)) return;
+    const timer = setTimeout(() => setToast(null), 3_500);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   if (status === 'error') {
     return (

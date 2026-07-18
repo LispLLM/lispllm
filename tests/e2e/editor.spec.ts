@@ -192,3 +192,29 @@ test('17. mobile activity navigation exposes learn, output, and editor without o
   await page.getByTestId('activity-learn').click();
   await expect(page.getByTestId('left-sidebar')).toBeVisible();
 });
+
+test('18. editor typing yields the main thread while generation is active', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'desktop interaction performance');
+  await boot(page);
+  await openEditor(page);
+  await page.evaluate(() => {
+    const target = window as unknown as { __interactionLongTasks: number[] };
+    target.__interactionLongTasks = [];
+    new PerformanceObserver((list) => {
+      target.__interactionLongTasks.push(...list.getEntries().map((entry) => entry.duration));
+    }).observe({ type: 'longtask', buffered: false });
+  });
+
+  const editor = page.getByRole('textbox', { name: 'model.lisp source editor' });
+  await editor.click();
+  await editor.pressSequentially('abcdefghijklmnopqrstabcdefghijklmnopqrst');
+  await page.waitForTimeout(100);
+
+  const longTasks = await page.evaluate(
+    () => (window as unknown as { __interactionLongTasks: number[] }).__interactionLongTasks ?? [],
+  );
+  expect(longTasks).toEqual([]);
+});

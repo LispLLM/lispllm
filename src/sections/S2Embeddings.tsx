@@ -17,7 +17,7 @@ export default function S2Embeddings({
   labOnly?: boolean;
   active?: boolean;
 }) {
-  const { imageVersion } = useAppState();
+  const imageVersion = useAppState((current) => current.imageVersion);
   const img = getImage();
   const charset = img.checkpoint.manifest.charset;
   const [selected, setSelected] = useState(charset.indexOf('e'));
@@ -102,7 +102,7 @@ export default function S2Embeddings({
         </div>
       )}
 
-      <CodePanel forms={['embed']} onPrimitiveHelp={setHelpFor} testId="s2-code" />
+      <CodePanel forms={['embed']} onPrimitiveHelp={setHelpFor} testId="s2-code" active={active} />
       {helpFor && <KernelRef name={helpFor} onClose={() => setHelpFor(null)} />}
       {!labOnly && (
         <p className="mt-3 text-sm text-dim">

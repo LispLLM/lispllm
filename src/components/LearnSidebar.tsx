@@ -5,9 +5,10 @@ import {
   setMobilePane,
   useWorkspaceState,
 } from '../store/workspace-store';
+import { shallowEqual } from '../store/selector';
 
 function LessonList() {
-  const { activeLesson } = useWorkspaceState();
+  const activeLesson = useWorkspaceState((current) => current.activeLesson);
   return (
     <nav className="max-h-48 overflow-y-auto border-b border-edge py-1" aria-label="lessons">
       {LESSONS.map((lesson) => (
@@ -61,7 +62,10 @@ function FilesView() {
 }
 
 export default function LearnSidebar() {
-  const { activeLesson, leftView } = useWorkspaceState();
+  const { activeLesson, leftView } = useWorkspaceState(
+    (current) => ({ activeLesson: current.activeLesson, leftView: current.leftView }),
+    shallowEqual,
+  );
   const lesson = LESSONS[activeLesson] ?? LESSONS[0];
   return (
     <aside className="flex h-full min-h-0 flex-col bg-panel" data-testid="left-sidebar">

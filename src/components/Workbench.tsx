@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { LESSONS } from '../content/lessons';
 import { useAppState } from '../store/app-store';
 import { setPanelSize, useWorkspaceState } from '../store/workspace-store';
+import { shallowEqual } from '../store/selector';
 import ActivityRail from './ActivityRail';
 import BottomPanel from './BottomPanel';
 import Header from './Header';
@@ -13,11 +14,24 @@ import RightPanel from './RightPanel';
 import SourceEditor from './SourceEditor';
 import StatusBar from './StatusBar';
 
+const StableHeader = memo(Header);
+const StableActivityRail = memo(ActivityRail);
+const StableLearnSidebar = memo(LearnSidebar);
+const StableSourceEditor = memo(SourceEditor);
+const StableKernelSourceView = memo(KernelSourceView);
+const StableRightPanel = memo(RightPanel);
+const StableBottomPanel = memo(BottomPanel);
+const StableStatusBar = memo(StatusBar);
+const StableRepl = memo(Repl);
+
 export default function Workbench() {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window === 'undefined' ? false : window.matchMedia('(max-width: 767px)').matches,
   );
-  const { replOpen, appliedSource } = useAppState();
+  const { replOpen, appliedSource } = useAppState(
+    (current) => ({ replOpen: current.replOpen, appliedSource: current.appliedSource }),
+    shallowEqual,
+  );
   const {
     activeLesson,
     editorFile,
@@ -28,7 +42,20 @@ export default function Workbench() {
     leftWidth,
     rightWidth,
     bottomHeight,
-  } = useWorkspaceState();
+  } = useWorkspaceState(
+    (current) => ({
+      activeLesson: current.activeLesson,
+      editorFile: current.editorFile,
+      leftOpen: current.leftOpen,
+      rightOpen: current.rightOpen,
+      bottomOpen: current.bottomOpen,
+      mobilePane: current.mobilePane,
+      leftWidth: current.leftWidth,
+      rightWidth: current.rightWidth,
+      bottomHeight: current.bottomHeight,
+    }),
+    shallowEqual,
+  );
   const mountedMobilePanes = useRef(new Set([mobilePane]));
   if (isMobile) mountedMobilePanes.current.add(mobilePane);
   const mountEditor = !isMobile || mountedMobilePanes.current.has('editor');
@@ -44,16 +71,16 @@ export default function Workbench() {
 
   return (
     <div id="top" className="flex h-dvh min-h-0 flex-col overflow-hidden bg-ink pb-11 md:pb-0">
-      <Header />
+      <StableHeader />
       <main className="flex min-h-0 flex-1">
-        <ActivityRail />
+        <StableActivityRail />
         {leftOpen && (
           <>
             <div
               className={`${mobilePane === 'learn' ? 'flex' : 'hidden'} min-h-0 shrink-0 flex-col max-md:!w-full md:flex`}
               style={{ width: leftWidth }}
             >
-              <LearnSidebar />
+              <StableLearnSidebar />
             </div>
             <div className="hidden md:block">
               <ResizableHandle
@@ -78,9 +105,9 @@ export default function Workbench() {
                 aria-label="source editor"
               >
                 {editorFile === 'model' ? (
-                  <SourceEditor forms={lesson.forms} />
+                  <StableSourceEditor forms={lesson.forms} />
                 ) : (
-                  <KernelSourceView />
+                  <StableKernelSourceView />
                 )}
               </section>
             )}
@@ -102,7 +129,7 @@ export default function Workbench() {
                   className={`${mobilePane === 'output' ? 'flex' : 'hidden'} min-h-0 shrink-0 flex-col max-md:!w-full md:flex`}
                   style={{ width: rightWidth }}
                 >
-                  <RightPanel />
+                  <StableRightPanel />
                 </div>
               </>
             )}
@@ -120,16 +147,16 @@ export default function Workbench() {
                 onChange={(value) => setPanelSize('bottomHeight', value)}
               />
               <div style={{ height: bottomHeight }}>
-                <BottomPanel />
+                <StableBottomPanel />
               </div>
             </div>
           )}
         </div>
       </main>
-      <StatusBar />
-      {replOpen && (
+      <StableStatusBar />
+      {isMobile && replOpen && (
         <div className="md:hidden">
-          <Repl />
+          <StableRepl />
         </div>
       )}
       <pre id="print-model-source" className="hidden whitespace-pre-wrap font-mono text-xs">

@@ -2,9 +2,13 @@
 import { useEffect, useRef } from 'react';
 import { REFERENCES } from '../content/references';
 import { setRefsOpen, useAppState } from '../store/app-store';
+import { shallowEqual } from '../store/selector';
 
 export default function RefsPanel() {
-  const { refsOpen, openRef } = useAppState();
+  const { refsOpen, openRef } = useAppState(
+    (current) => ({ refsOpen: current.refsOpen, openRef: current.openRef }),
+    shallowEqual,
+  );
   const panelRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<Element | null>(null);
 

@@ -96,7 +96,7 @@ export const LESSONS: Lesson[] = [
 ];
 
 function LessonBody({ id }: { id: number }): ReactNode {
-  const { imageVersion } = useAppState();
+  const imageVersion = useAppState((current) => current.imageVersion);
   const img = getImage();
   void imageVersion;
   const charset = img.checkpoint.manifest.charset;

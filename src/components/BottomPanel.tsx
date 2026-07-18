@@ -4,8 +4,8 @@ import ProblemsPanel from './ProblemsPanel';
 import Repl from './Repl';
 
 export default function BottomPanel() {
-  const { sourceDiagnostics } = useAppState();
-  const { bottomTab } = useWorkspaceState();
+  const sourceDiagnostics = useAppState((current) => current.sourceDiagnostics);
+  const bottomTab = useWorkspaceState((current) => current.bottomTab);
   return (
     <section className="flex h-full min-h-0 flex-col bg-panel" data-testid="bottom-panel">
       <div className="flex min-h-8 items-center border-b border-edge bg-[#141311] text-[11px] uppercase tracking-wider">

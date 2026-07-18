@@ -1,7 +1,7 @@
 import { useAppState } from '../store/app-store';
 
 export default function ProblemsPanel() {
-  const { sourceDiagnostics } = useAppState();
+  const sourceDiagnostics = useAppState((current) => current.sourceDiagnostics);
   return (
     <section className="h-full overflow-y-auto text-xs" data-testid="problems-panel">
       {sourceDiagnostics.length === 0 ? (

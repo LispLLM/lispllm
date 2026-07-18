@@ -282,3 +282,45 @@ Final measured gates (local production build, Apple Silicon):
 Exit gate: fixed workbench is responsive and keyboard-operable; source edits remain code-is-truth
 and last-good safe; exact local/share restoration is fingerprinted; original model invariants and
 all budgets remain green.
+
+## M8 — Interaction performance and transient confirmations
+
+A production Playwright profile reproduced the reported editor lag: inserting 20 characters while
+the §0 generator was active took **193.3 ms** and overlapped a **124 ms** main-thread long task. The
+dominant cause was background model inference, compounded by broad external-store subscriptions,
+eager lesson mounting, controlled CodeMirror synchronization, and repeated recursive view renders.
+
+Changes:
+
+- Added selector-aware app/workspace subscriptions with stable selected snapshots and shallow
+  equality. Store emissions now skip no-op updates; workspace persistence is debounced and AST
+  selection no longer writes layout state to localStorage.
+- CodeMirror owns its document while typing. React synchronizes only external replacements (Run,
+  Revert, bundled source, local/share restore), source parsing waits for 180 ms of inactivity, and
+  cursor-to-AST lookup is coalesced with `requestAnimationFrame`.
+- Lesson labs mount on first visit and retain local interaction state afterward. Stable workbench
+  panes, recursive code panels, the REPL transcript, and trace-tree rows are memoized. Inactive code
+  panels stop observing image/trace changes.
+- Prompt, attention-focus, and environment-filter fields keep immediate local drafts and commit
+  expensive parent updates after a short quiet period.
+- §0 generation runs at 8 chars/s by default, stops when its lesson is inactive, and yields for
+  400 ms after keyboard, pointer, or input activity. Opening Trace requests an on-demand trace even
+  if generation has not yet produced one.
+- Successful Share and exact-state JSON copy confirmations dismiss automatically after 3.5 seconds;
+  error/action toasts remain manually dismissible.
+
+Regression coverage now asserts that editor typing produces no browser long task while generation
+is active and that the Share confirmation dismisses itself. The cross-lesson synchronization test
+navigates to the lazily mounted §6 lab before asserting its live temperature literal.
+
+Final measured gates (local production build, Apple Silicon):
+
+- identical 20-character editor benchmark: **43.0 ms** (**77.8% faster**) with **zero long tasks**
+  during the 400 ms interaction window.
+- unit: **74 passed**; e2e: **28 passed, 8 intentional device-specific skips** across desktop
+  Chromium and iPhone SE Chromium viewport.
+- JS bundle: **196.7 KB gz** excluding weights (≤ 350 KB).
+- untraced forward at ctx 96: **47.8 ms**; traced forward: **31.7 ms**; rebuild with two history
+  entries: **0.2 ms**; sustained generation: **26.7 chars/s**.
+- Lighthouse 13 desktop static preset: **performance 100, accessibility 100**, TBT 0 ms,
+  LCP 0.77 s.

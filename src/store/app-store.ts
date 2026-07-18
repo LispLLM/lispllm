@@ -3,12 +3,13 @@
  * App state per §5: { checkpoint, seed, knobEdits, replHistory, focusString,
  * scrollSection } plus UI flags and the live trace.
  */
-import { useSyncExternalStore } from 'react';
 import { Image } from '../model/image';
 import type { KnobEdit, ReplLine } from '../model/image';
 import type { Trace } from '../model/trace';
 import { readProgram } from '../lisp/reader';
 import { LispError } from '../lisp/types';
+import { useExternalStoreSelector } from './selector';
+import type { EqualityFn } from './selector';
 
 export interface SourceDiagnostic {
   kind: 'syntax' | 'runtime' | 'contract';
@@ -79,6 +80,8 @@ let initialSeed = 1337;
 const listeners = new Set<() => void>();
 
 function emit(next: Partial<AppState>): void {
+  const entries = Object.entries(next) as Array<[keyof AppState, AppState[keyof AppState]]>;
+  if (entries.every(([key, value]) => Object.is(state[key], value))) return;
   state = { ...state, ...next };
   for (const l of listeners) l();
 }
@@ -97,8 +100,11 @@ export function getState(): AppState {
   return state;
 }
 
-export function useAppState(): AppState {
-  return useSyncExternalStore(subscribe, getState, getState);
+export function useAppState<Selection = AppState>(
+  selector: (current: AppState) => Selection = (current) => current as unknown as Selection,
+  isEqual: EqualityFn<Selection> = Object.is,
+): Selection {
+  return useExternalStoreSelector(subscribe, getState, selector, isEqual);
 }
 
 // ---------------------------------------------------------------------------
@@ -273,12 +279,28 @@ export function validateSource(source: string): SourceDiagnostic[] {
   }
 }
 
+let sourceValidationTimer: ReturnType<typeof setTimeout> | null = null;
+
+function cancelSourceValidation(): void {
+  if (sourceValidationTimer) clearTimeout(sourceValidationTimer);
+  sourceValidationTimer = null;
+}
+
 export function setSourceText(source: string): void {
+  cancelSourceValidation();
+  const sourceDirty = source !== state.appliedSource;
   emit({
     sourceText: source,
-    sourceDirty: source !== state.appliedSource,
-    sourceDiagnostics: validateSource(source),
+    sourceDirty,
+    sourceDiagnostics: state.sourceDiagnostics.length > 0 ? [] : state.sourceDiagnostics,
   });
+  if (!sourceDirty) return;
+  sourceValidationTimer = setTimeout(() => {
+    sourceValidationTimer = null;
+    if (state.sourceText !== source || !state.sourceDirty) return;
+    const sourceDiagnostics = validateSource(source);
+    if (sourceDiagnostics.length > 0) emit({ sourceDiagnostics });
+  }, 180);
 }
 
 /**
@@ -286,6 +308,7 @@ export function setSourceText(source: string): void {
  * evaluation, replay, and the UI model contract all succeed.
  */
 export function applySource(source = state.sourceText, replayHistory = state.replHistory): boolean {
+  cancelSourceValidation();
   const syntax = validateSource(source);
   if (syntax.length > 0) {
     emit({ sourceDiagnostics: syntax, sourceApplying: false });
@@ -325,6 +348,7 @@ export function applySource(source = state.sourceText, replayHistory = state.rep
 }
 
 export function revertSourceDraft(): void {
+  cancelSourceValidation();
   emit({
     sourceText: state.appliedSource,
     sourceDirty: false,
@@ -334,6 +358,7 @@ export function revertSourceDraft(): void {
 }
 
 export function restoreBundledSourceDraft(): void {
+  cancelSourceValidation();
   emit({
     sourceText: state.bundledSource,
     sourceDirty: state.bundledSource !== state.appliedSource,

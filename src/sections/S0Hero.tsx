@@ -7,9 +7,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import CodePanel from '../components/CodePanel';
 import ProbBars from '../components/ProbBars';
 import { clearStaleGeneration, getImage, setFocusString, useAppState } from '../store/app-store';
+import { shallowEqual } from '../store/selector';
 
 const PROMPT = 'ROMEO: ';
 const TOTAL = 400;
+const INTERACTION_QUIET_MS = 400;
+const HERO_FORMS = ['temperature', 'next-token', 'generate'];
 
 export default function S0Hero({
   labOnly = false,
@@ -18,14 +21,37 @@ export default function S0Hero({
   labOnly?: boolean;
   active?: boolean;
 }) {
-  const { status, imageVersion, staleGeneration } = useAppState();
+  const { status, imageVersion, staleGeneration } = useAppState(
+    (current) => ({
+      status: current.status,
+      imageVersion: current.imageVersion,
+      staleGeneration: current.staleGeneration,
+    }),
+    shallowEqual,
+  );
   const [text, setText] = useState(PROMPT);
   const [playing, setPlaying] = useState(true);
-  const [speed, setSpeed] = useState(16); // chars/s, cosmetic pacing only
+  const [speed, setSpeed] = useState(8); // leaves main-thread time for editor interaction
   const [probs, setProbs] = useState<Float32Array | null>(null);
   const tokens = useRef<number[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startedFor = useRef(-1);
+  const lastInteraction = useRef(-Infinity);
+
+  useEffect(() => {
+    if (!active) return;
+    const markInteraction = () => {
+      lastInteraction.current = performance.now();
+    };
+    window.addEventListener('keydown', markInteraction, true);
+    window.addEventListener('pointerdown', markInteraction, true);
+    window.addEventListener('input', markInteraction, true);
+    return () => {
+      window.removeEventListener('keydown', markInteraction, true);
+      window.removeEventListener('pointerdown', markInteraction, true);
+      window.removeEventListener('input', markInteraction, true);
+    };
+  }, [active]);
 
   const step = useCallback(() => {
     const img = getImage();
@@ -49,11 +75,16 @@ export default function S0Hero({
 
   // stream loop
   useEffect(() => {
-    if (status !== 'ready' || !playing) return;
+    if (status !== 'ready' || !playing || !active) return;
     if (startedFor.current === -1) startedFor.current = imageVersion;
     let cancelled = false;
     const tick = () => {
       if (cancelled) return;
+      const quietFor = performance.now() - lastInteraction.current;
+      if (quietFor < INTERACTION_QUIET_MS) {
+        timer.current = setTimeout(tick, INTERACTION_QUIET_MS - quietFor);
+        return;
+      }
       const more = step();
       if (more) timer.current = setTimeout(tick, 1000 / speed);
       else {
@@ -66,7 +97,7 @@ export default function S0Hero({
       cancelled = true;
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [status, imageVersion, playing, speed, step, updateProbs]);
+  }, [status, imageVersion, playing, speed, step, updateProbs, active]);
 
   useEffect(() => {
     if (!playing && status === 'ready' && tokens.current.length > 0) updateProbs();
@@ -99,7 +130,7 @@ export default function S0Hero({
       )}
 
       <div className={`${labOnly ? '' : 'mt-8'} grid min-w-0 gap-4 xl:grid-cols-2`}>
-        <CodePanel forms={['temperature', 'next-token', 'generate']} testId="hero-code" />
+        <CodePanel forms={HERO_FORMS} testId="hero-code" active={active} />
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-3 text-sm">
             <button

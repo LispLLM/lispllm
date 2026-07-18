@@ -5,11 +5,12 @@
  * traced shape/value preview, click → inspect echo, "?" affordance on
  * primitive names (INV-3), drag affordance on knob-bound literals.
  */
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import type { Ast, Value } from '../lisp/types';
 import { isBuiltin, isTensor } from '../lisp/types';
 import { printValue } from '../lisp/printer';
 import { appendTranscript, getImage, useAppState } from '../store/app-store';
+import { shallowEqual } from '../store/selector';
 
 const SPECIALS = new Set([
   'define',
@@ -45,6 +46,7 @@ export interface CodePanelProps {
   onPrimitiveHelp?: (name: string) => void;
   dense?: boolean;
   testId?: string;
+  active?: boolean;
 }
 
 function previewValue(v: Value): string {
@@ -53,7 +55,7 @@ function previewValue(v: Value): string {
   return s.length > 60 ? s.slice(0, 57) + '…' : s;
 }
 
-export default function CodePanel({
+function CodePanel({
   forms,
   highlightIds,
   onNodeHover,
@@ -61,8 +63,15 @@ export default function CodePanel({
   onPrimitiveHelp,
   dense,
   testId,
+  active = true,
 }: CodePanelProps) {
-  const { imageVersion, trace } = useAppState();
+  const { imageVersion, trace } = useAppState(
+    (current) => ({
+      imageVersion: active ? current.imageVersion : -1,
+      trace: active ? current.trace : null,
+    }),
+    shallowEqual,
+  );
   const [status, setStatus] = useState<string | null>(null);
 
   const img = getImage();
@@ -299,3 +308,22 @@ function DraggableLiteral({
     </span>
   );
 }
+
+function sameForms(previous: CodePanelProps['forms'], next: CodePanelProps['forms']): boolean {
+  if (previous === next) return true;
+  if (previous === '*' || next === '*' || previous.length !== next.length) return false;
+  return previous.every((form, index) => form === next[index]);
+}
+
+export default memo(
+  CodePanel,
+  (previous, next) =>
+    sameForms(previous.forms, next.forms) &&
+    previous.highlightIds === next.highlightIds &&
+    previous.onNodeHover === next.onNodeHover &&
+    previous.editable === next.editable &&
+    previous.onPrimitiveHelp === next.onPrimitiveHelp &&
+    previous.dense === next.dense &&
+    previous.testId === next.testId &&
+    previous.active === next.active,
+);

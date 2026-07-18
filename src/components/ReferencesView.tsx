@@ -4,7 +4,7 @@ import { setRefsOpen, useAppState } from '../store/app-store';
 import { setActiveLesson, setMobilePane, setRightTab } from '../store/workspace-store';
 
 export default function ReferencesView() {
-  const { openRef } = useAppState();
+  const openRef = useAppState((current) => current.openRef);
   const rootRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<Element | null>(null);
 

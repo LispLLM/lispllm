@@ -54,6 +54,7 @@ test('5. drag temperature knob → literal changes in §5 and §6 AND regenerate
   await openLesson(page, 5);
   await page.getByTestId('s5-knob').fill('2.5');
   await expect(page.getByTestId('s5-code')).toContainText('2.5');
+  await openLesson(page, 6);
   await expect(page.getByTestId('s6-code')).toContainText('2.5');
 
   // rebuild replays history under the new temperature: same seed, different output

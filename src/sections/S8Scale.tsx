@@ -16,7 +16,7 @@ export default function S8Scale({
   labOnly?: boolean;
   active?: boolean;
 }) {
-  const { imageVersion } = useAppState();
+  const imageVersion = useAppState((current) => current.imageVersion);
   const img = getImage();
 
   const params = useMemo(() => {

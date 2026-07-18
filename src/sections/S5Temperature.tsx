@@ -11,6 +11,7 @@ import { Rng } from '../tensor/rng';
 import { lastRow, sample as sampleK } from '../tensor/kernels';
 import { list } from '../lisp/types';
 import { applyKnobEdit, getImage, removeKnobEdit, useAppState } from '../store/app-store';
+import { shallowEqual } from '../store/selector';
 
 const TEMPS = [0.2, 0.8, 1.5];
 const SAMPLE_LEN = 48;
@@ -41,7 +42,15 @@ export default function S5Temperature({
   labOnly?: boolean;
   active?: boolean;
 }) {
-  const { imageVersion, focusString, knobEdits, sourceDirty } = useAppState();
+  const { imageVersion, focusString, knobEdits, sourceDirty } = useAppState(
+    (current) => ({
+      imageVersion: current.imageVersion,
+      focusString: current.focusString,
+      knobEdits: current.knobEdits,
+      sourceDirty: current.sourceDirty,
+    }),
+    shallowEqual,
+  );
   const img = getImage();
   const [helpFor, setHelpFor] = useState<string | null>(null);
   const { ref: sectionRef, visible } = useNearViewport<HTMLElement>();
@@ -182,6 +191,7 @@ export default function S5Temperature({
 
       <CodePanel
         forms={['temperature', 'next-token']}
+        active={active}
         onPrimitiveHelp={setHelpFor}
         editable={
           sourceDirty

@@ -1,5 +1,6 @@
 import { LESSONS } from '../content/lessons';
 import { setRightOpen, setRightTab, useWorkspaceState } from '../store/workspace-store';
+import { shallowEqual } from '../store/selector';
 import EnvironmentBrowser from './EnvironmentBrowser';
 import LessonLabs from './LessonLabs';
 import ModelInfo from './ModelInfo';
@@ -15,7 +16,10 @@ const tabs = [
 ] as const;
 
 export default function RightPanel() {
-  const { activeLesson, rightTab } = useWorkspaceState();
+  const { activeLesson, rightTab } = useWorkspaceState(
+    (current) => ({ activeLesson: current.activeLesson, rightTab: current.rightTab }),
+    shallowEqual,
+  );
   const lesson = LESSONS[activeLesson] ?? LESSONS[0];
   return (
     <aside className="flex h-full min-h-0 flex-col bg-panel" data-testid="right-panel">

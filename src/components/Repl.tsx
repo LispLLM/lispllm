@@ -3,8 +3,10 @@
  * expanded = 40vh history + input (85vh sheet on mobile). Multi-line via
  * Shift+Enter, history via ↑/↓, paren-balance indicator, (help), (reset!).
  */
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
+import type { ReplLine } from '../model/image';
 import { replSubmit, resetImage, setReplDraft, setReplOpen, useAppState } from '../store/app-store';
+import { shallowEqual } from '../store/selector';
 import { setBottomOpen, setBottomTab } from '../store/workspace-store';
 
 function parenBalance(s: string): number {
@@ -44,8 +46,28 @@ const LINE_PREFIX: Record<string, string> = {
   inspect: '',
 };
 
+const ReplTranscript = memo(function ReplTranscript({ transcript }: { transcript: ReplLine[] }) {
+  return transcript.map((line, index) => (
+    <div key={index} className={`whitespace-pre-wrap ${LINE_STYLES[line.kind]}`}>
+      {LINE_PREFIX[line.kind]}
+      {line.text}
+    </div>
+  ));
+});
+
 export default function Repl({ embedded = false }: { embedded?: boolean }) {
-  const { replOpen, transcript, imageVersion, replDraft: input } = useAppState();
+  const {
+    replOpen,
+    transcript,
+    replDraft: input,
+  } = useAppState(
+    (current) => ({
+      replOpen: current.replOpen,
+      transcript: current.transcript,
+      replDraft: current.replDraft,
+    }),
+    shallowEqual,
+  );
   const [histIdx, setHistIdx] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -138,14 +160,7 @@ export default function Repl({ embedded = false }: { embedded?: boolean }) {
           className="min-h-0 flex-1 overflow-y-auto px-4 py-2 font-mono text-sm"
           data-testid="repl-history"
         >
-          <div key={imageVersion === -1 ? 'never' : 'transcript'}>
-            {transcript.map((line, i) => (
-              <div key={i} className={`whitespace-pre-wrap ${LINE_STYLES[line.kind]}`}>
-                {LINE_PREFIX[line.kind]}
-                {line.text}
-              </div>
-            ))}
-          </div>
+          <ReplTranscript transcript={transcript} />
         </div>
       )}
       <div className="flex items-start gap-2 px-4 py-2">

@@ -1,10 +1,18 @@
 import { LESSONS } from '../content/lessons';
 import { getImage, useAppState } from '../store/app-store';
+import { shallowEqual } from '../store/selector';
 import { useWorkspaceState } from '../store/workspace-store';
 
 export default function StatusBar() {
-  const { seed, sourceDirty, trace } = useAppState();
-  const { activeLesson } = useWorkspaceState();
+  const { seed, sourceDirty, trace } = useAppState(
+    (current) => ({
+      seed: current.seed,
+      sourceDirty: current.sourceDirty,
+      trace: current.trace,
+    }),
+    shallowEqual,
+  );
+  const activeLesson = useWorkspaceState((current) => current.activeLesson);
   const manifest = getImage().checkpoint.manifest;
   return (
     <footer

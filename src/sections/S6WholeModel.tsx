@@ -27,7 +27,7 @@ export default function S6WholeModel({
   labOnly?: boolean;
   active?: boolean;
 }) {
-  const { imageVersion } = useAppState();
+  const imageVersion = useAppState((current) => current.imageVersion);
   const img = getImage();
   const [helpFor, setHelpFor] = useState<string | null>(null);
 
@@ -108,7 +108,7 @@ export default function S6WholeModel({
       </div>
 
       <div className="print-code">
-        <CodePanel forms="*" onPrimitiveHelp={setHelpFor} dense testId="s6-code" />
+        <CodePanel forms="*" onPrimitiveHelp={setHelpFor} dense testId="s6-code" active={active} />
       </div>
       {helpFor && <KernelRef name={helpFor} onClose={() => setHelpFor(null)} />}
       {!labOnly && (

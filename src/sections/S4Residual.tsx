@@ -6,6 +6,7 @@ import CodePanel from '../components/CodePanel';
 import KernelRef from '../components/KernelRef';
 import { residualContributions } from '../model/queries';
 import { getImage, replSubmit, useAppState } from '../store/app-store';
+import { shallowEqual } from '../store/selector';
 
 const CONT_CHARS = 60;
 
@@ -16,7 +17,15 @@ export default function S4Residual({
   labOnly?: boolean;
   active?: boolean;
 }) {
-  const { imageVersion, focusString, trace, sourceDirty } = useAppState();
+  const { imageVersion, focusString, trace, sourceDirty } = useAppState(
+    (current) => ({
+      imageVersion: current.imageVersion,
+      focusString: current.focusString,
+      trace: current.trace,
+      sourceDirty: current.sourceDirty,
+    }),
+    shallowEqual,
+  );
   const img = getImage();
   const dims = img.checkpoint.manifest.dims;
   const [helpFor, setHelpFor] = useState<string | null>(null);
@@ -208,6 +217,7 @@ export default function S4Residual({
 
       <CodePanel
         forms={['ablated', 'attention', 'block']}
+        active={active}
         onPrimitiveHelp={setHelpFor}
         testId="s4-code"
       />

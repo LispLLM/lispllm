@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Value } from '../lisp/types';
 import { Closure, LispRecord, isBuiltin, isTensor } from '../lisp/types';
 import { printValue } from '../lisp/printer';
@@ -14,8 +14,44 @@ function kindOf(value: Value): string {
   return 'value';
 }
 
+function EnvironmentFilter({
+  count,
+  onCommit,
+}: {
+  count: number;
+  onCommit: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState('');
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+  return (
+    <div className="border-b border-edge p-2">
+      <label className="block text-[11px] uppercase tracking-wider text-dim" htmlFor="env-filter">
+        environment · {count} bindings
+      </label>
+      <input
+        id="env-filter"
+        className="mt-2 w-full rounded border border-edge bg-ink px-2 py-1 text-xs text-paper outline-none focus:border-amber"
+        placeholder="filter symbols"
+        value={draft}
+        onChange={(event) => {
+          const next = event.target.value;
+          setDraft(next);
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = setTimeout(() => onCommit(next), 80);
+        }}
+      />
+    </div>
+  );
+}
+
 export default function EnvironmentBrowser() {
-  const { imageVersion } = useAppState();
+  const imageVersion = useAppState((current) => current.imageVersion);
   const [filter, setFilter] = useState('');
   const img = getImage();
   const bindings = useMemo(() => {
@@ -36,18 +72,7 @@ export default function EnvironmentBrowser() {
 
   return (
     <section className="flex h-full min-h-0 flex-col" data-testid="s7-env">
-      <div className="border-b border-edge p-2">
-        <label className="block text-[11px] uppercase tracking-wider text-dim" htmlFor="env-filter">
-          environment · {bindings.length} bindings
-        </label>
-        <input
-          id="env-filter"
-          className="mt-2 w-full rounded border border-edge bg-ink px-2 py-1 text-xs text-paper outline-none focus:border-amber"
-          placeholder="filter symbols"
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
-        />
-      </div>
+      <EnvironmentFilter count={bindings.length} onCommit={setFilter} />
       <div className="min-h-0 flex-1 overflow-y-auto py-1 text-xs" role="list">
         {shown.map((binding) => (
           <button

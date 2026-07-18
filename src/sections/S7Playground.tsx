@@ -21,7 +21,7 @@ export default function S7Playground({
   labOnly?: boolean;
   active?: boolean;
 }) {
-  const { sourceDirty } = useAppState();
+  const sourceDirty = useAppState((current) => current.sourceDirty);
   return (
     <section
       id="sec-7"

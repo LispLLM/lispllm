@@ -38,9 +38,11 @@ test('9. share link round-trip restores temperature edit + history length', asyn
 
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.getByTestId('btn-share').click();
-  await expect(page.getByTestId('toast')).toContainText('share link copied');
+  const toast = page.getByTestId('toast');
+  await expect(toast).toContainText('share link copied');
   const url = await page.evaluate(() => navigator.clipboard.readText());
   expect(url).toContain('#s=');
+  await expect(toast).not.toBeVisible({ timeout: 5_000 });
 
   // fresh context
   const fresh = await context.newPage();

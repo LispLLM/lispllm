@@ -1,8 +1,17 @@
 import { useMemo } from 'react';
 import { getImage, useAppState } from '../store/app-store';
+import { shallowEqual } from '../store/selector';
 
 export default function ModelInfo() {
-  const { imageVersion, seed, sourceDirty, appliedSource } = useAppState();
+  const { imageVersion, seed, sourceDirty, appliedSource } = useAppState(
+    (current) => ({
+      imageVersion: current.imageVersion,
+      seed: current.seed,
+      sourceDirty: current.sourceDirty,
+      appliedSource: current.appliedSource,
+    }),
+    shallowEqual,
+  );
   const img = getImage();
   const manifest = img.checkpoint.manifest;
   const values = useMemo(() => {

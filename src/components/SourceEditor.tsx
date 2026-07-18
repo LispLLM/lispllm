@@ -32,13 +32,16 @@ import KernelRef from './KernelRef';
 import {
   applySource,
   getImage,
+  getState,
   restoreBundledSourceDraft,
   revertSourceDraft,
   setSourceText,
   setToast,
+  subscribe,
   useAppState,
 } from '../store/app-store';
 import { setBottomTab, setSelectedNodeId, useWorkspaceState } from '../store/workspace-store';
+import { shallowEqual } from '../store/selector';
 
 interface LispModeState {
   depth: number;
@@ -188,16 +191,23 @@ function downloadText(name: string, text: string): void {
 }
 
 export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
-  const { sourceText, sourceDirty, sourceApplying, sourceDiagnostics, imageVersion } =
-    useAppState();
-  const { selectedNodeId } = useWorkspaceState();
+  const { sourceDirty, sourceApplying, sourceDiagnostics, imageVersion } = useAppState(
+    (current) => ({
+      sourceDirty: current.sourceDirty,
+      sourceApplying: current.sourceApplying,
+      sourceDiagnostics: current.sourceDiagnostics,
+      imageVersion: current.imageVersion,
+    }),
+    shallowEqual,
+  );
+  const selectedNodeId = useWorkspaceState((current) => current.selectedNodeId);
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const dirtyRef = useRef(sourceDirty);
+  const editorTextRef = useRef(getState().sourceText);
+  const selectionFrameRef = useRef<number | null>(null);
   const [helpFor, setHelpFor] = useState<string | null>(null);
   const [cursorBuiltin, setCursorBuiltin] = useState<string | null>(null);
-
-  dirtyRef.current = sourceDirty;
+  const [lineCount, setLineCount] = useState(() => getState().sourceText.split('\n').length);
 
   const extensions = useMemo<Extension[]>(
     () => [
@@ -234,19 +244,35 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
         ...searchKeymap,
       ]),
       EditorView.updateListener.of((update) => {
-        if (update.docChanged) setSourceText(update.state.doc.toString());
-        if (update.selectionSet && !dirtyRef.current) {
-          const node = getImage().nodeAtOffset(update.state.selection.main.head);
-          setSelectedNodeId(node?.id ?? null);
-          if (node?.kind === 'sym') {
-            try {
-              setCursorBuiltin(isBuiltin(getImage().lookup(node.name)) ? node.name : null);
-            } catch {
+        if (update.docChanged) {
+          const sourceText = update.state.doc.toString();
+          editorTextRef.current = sourceText;
+          setSourceText(sourceText);
+          setLineCount((current) =>
+            current === update.state.doc.lines ? current : update.state.doc.lines,
+          );
+        }
+        if (update.selectionSet && !update.docChanged && !getState().sourceDirty) {
+          if (selectionFrameRef.current !== null) {
+            cancelAnimationFrame(selectionFrameRef.current);
+          }
+          const offset = update.state.selection.main.head;
+          const image = getImage();
+          selectionFrameRef.current = requestAnimationFrame(() => {
+            selectionFrameRef.current = null;
+            if (!viewRef.current || getState().sourceDirty || getImage() !== image) return;
+            const node = image.nodeAtOffset(offset);
+            setSelectedNodeId(node?.id ?? null);
+            if (node?.kind === 'sym') {
+              try {
+                setCursorBuiltin(isBuiltin(image.lookup(node.name)) ? node.name : null);
+              } catch {
+                setCursorBuiltin(null);
+              }
+            } else {
               setCursorBuiltin(null);
             }
-          } else {
-            setCursorBuiltin(null);
-          }
+          });
         }
       }),
     ],
@@ -256,11 +282,13 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
   useEffect(() => {
     if (!hostRef.current || viewRef.current) return;
     const view = new EditorView({
-      state: EditorState.create({ doc: sourceText, extensions }),
+      state: EditorState.create({ doc: getState().sourceText, extensions }),
       parent: hostRef.current,
     });
+    editorTextRef.current = view.state.doc.toString();
     viewRef.current = view;
     return () => {
+      if (selectionFrameRef.current !== null) cancelAnimationFrame(selectionFrameRef.current);
       view.destroy();
       viewRef.current = null;
     };
@@ -268,11 +296,22 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view || view.state.doc.toString() === sourceText) return;
-    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: sourceText } });
-  }, [sourceText]);
+  useEffect(
+    () =>
+      subscribe(() => {
+        const view = viewRef.current;
+        const sourceText = getState().sourceText;
+        if (!view) {
+          editorTextRef.current = sourceText;
+          return;
+        }
+        if (editorTextRef.current === sourceText) return;
+        editorTextRef.current = sourceText;
+        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: sourceText } });
+        setLineCount(view.state.doc.lines);
+      }),
+    [],
+  );
 
   useEffect(() => {
     const view = viewRef.current;
@@ -365,7 +404,7 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
           <button
             className="rounded px-2 py-1 text-dim hover:bg-paper/5 hover:text-paper max-sm:hidden"
             onClick={async () => {
-              await navigator.clipboard.writeText(sourceText);
+              await navigator.clipboard.writeText(getState().sourceText);
               setToast('model.lisp copied to clipboard');
             }}
           >
@@ -373,7 +412,7 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
           </button>
           <button
             className="rounded px-2 py-1 text-dim hover:bg-paper/5 hover:text-paper max-sm:hidden"
-            onClick={() => downloadText('model.lisp', sourceText)}
+            onClick={() => downloadText('model.lisp', getState().sourceText)}
           >
             download
           </button>
@@ -398,7 +437,7 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
       <div ref={hostRef} className="min-h-0 flex-1" />
       <div className="flex min-h-6 items-center gap-3 border-t border-edge bg-panel px-2 text-[11px] text-dim">
         <span>{sourceDirty ? 'draft' : 'running source'}</span>
-        <span>{sourceText.split('\n').length} lines</span>
+        <span>{lineCount} lines</span>
         {sourceDiagnostics.length > 0 && (
           <button
             data-testid="editor-diagnostics"

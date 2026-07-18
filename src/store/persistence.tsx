@@ -8,6 +8,7 @@ import {
   useAppState,
 } from './app-store';
 import { sourceFingerprint } from './share';
+import { shallowEqual } from './selector';
 
 const KEY = 'lispllm.source.v1';
 
@@ -39,7 +40,18 @@ export function restoreLocalSourceState(): boolean {
 
 export default function PersistenceBridge() {
   const { status, seed, knobEdits, replHistory, sourceText, appliedSource, bundledSource } =
-    useAppState();
+    useAppState(
+      (current) => ({
+        status: current.status,
+        seed: current.seed,
+        knobEdits: current.knobEdits,
+        replHistory: current.replHistory,
+        sourceText: current.sourceText,
+        appliedSource: current.appliedSource,
+        bundledSource: current.bundledSource,
+      }),
+      shallowEqual,
+    );
   useEffect(() => {
     if (status !== 'ready' || !bundledSource) return;
     const timer = setTimeout(() => {

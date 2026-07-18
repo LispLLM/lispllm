@@ -11,6 +11,7 @@ import {
   useAppState,
 } from '../store/app-store';
 import { encodeShare } from '../store/share';
+import { shallowEqual } from '../store/selector';
 import {
   setActiveLesson,
   setBottomOpen,
@@ -26,8 +27,24 @@ function fmtParams(n: number): string {
 }
 
 export default function Header() {
-  const { status, replOpen, refsOpen, sourceDirty } = useAppState();
-  const { bottomOpen, leftOpen, activeLesson, rightTab } = useWorkspaceState();
+  const { status, replOpen, refsOpen, sourceDirty } = useAppState(
+    (current) => ({
+      status: current.status,
+      replOpen: current.replOpen,
+      refsOpen: current.refsOpen,
+      sourceDirty: current.sourceDirty,
+    }),
+    shallowEqual,
+  );
+  const { bottomOpen, leftOpen, activeLesson, rightTab } = useWorkspaceState(
+    (current) => ({
+      bottomOpen: current.bottomOpen,
+      leftOpen: current.leftOpen,
+      activeLesson: current.activeLesson,
+      rightTab: current.rightTab,
+    }),
+    shallowEqual,
+  );
   const manifest = status === 'ready' ? getImage().checkpoint.manifest : null;
   return (
     <header className="z-[60] flex h-9 shrink-0 items-center border-b border-edge bg-[#141311] px-2 text-xs">

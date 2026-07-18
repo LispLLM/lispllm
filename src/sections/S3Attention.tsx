@@ -7,9 +7,38 @@ import KernelRef from '../components/KernelRef';
 import TensorView from '../components/TensorView';
 import { attentionWeights, attentionValues, nodeSource } from '../model/queries';
 import { getImage, setFocusString, useAppState } from '../store/app-store';
+import { shallowEqual } from '../store/selector';
 
 const DEFAULT_FOCUS = 'To be, or not to be: that is the question';
 const glyph = (ch: string) => (ch === ' ' ? '␣' : ch === '\n' ? '⏎' : ch);
+
+function FocusInput({ value, onCommit }: { value: string; onCommit: (value: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => setDraft(value), [value]);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  return (
+    <input
+      data-testid="s3-focus"
+      className="mb-4 w-full rounded border border-edge bg-panel px-3 py-2 text-sm text-paper outline-none focus:border-amber"
+      value={draft}
+      onChange={(event) => {
+        const next = event.target.value;
+        setDraft(next);
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => next.trim() && onCommit(next), 200);
+      }}
+      aria-label="focus string"
+    />
+  );
+}
 
 export default function S3Attention({
   labOnly = false,
@@ -18,7 +47,14 @@ export default function S3Attention({
   labOnly?: boolean;
   active?: boolean;
 }) {
-  const { imageVersion, focusString, trace } = useAppState();
+  const { imageVersion, focusString, trace } = useAppState(
+    (current) => ({
+      imageVersion: current.imageVersion,
+      focusString: current.focusString,
+      trace: current.trace,
+    }),
+    shallowEqual,
+  );
   const img = getImage();
   const dims = img.checkpoint.manifest.dims;
   const [layer, setLayer] = useState(0);
@@ -28,17 +64,11 @@ export default function S3Attention({
   const [maskHover, setMaskHover] = useState(false);
   const [weightsHover, setWeightsHover] = useState(false);
   const [helpFor, setHelpFor] = useState<string | null>(null);
-  const [input, setInput] = useState(DEFAULT_FOCUS);
-  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!focusString) setFocusString(DEFAULT_FOCUS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (focusString) setInput(focusString);
-  }, [focusString]);
 
   const hit = useMemo(() => {
     void imageVersion;
@@ -92,12 +122,6 @@ export default function S3Attention({
     setWeightsHover(node.kind === 'sym' && node.name === 'weights');
   };
 
-  const onFocusInput = (v: string) => {
-    setInput(v);
-    if (debounce.current) clearTimeout(debounce.current);
-    debounce.current = setTimeout(() => v.trim() && setFocusString(v), 200);
-  };
-
   const strip = (kind: 'q' | 'k') => (
     <div className="flex flex-wrap gap-px" data-testid={`s3-${kind}-strip`}>
       {tokens.map((ch, i) => {
@@ -140,13 +164,7 @@ export default function S3Attention({
         </>
       )}
 
-      <input
-        data-testid="s3-focus"
-        className="mb-4 w-full rounded border border-edge bg-panel px-3 py-2 text-sm text-paper outline-none focus:border-amber"
-        value={input}
-        onChange={(e) => onFocusInput(e.target.value)}
-        aria-label="focus string"
-      />
+      <FocusInput value={focusString || DEFAULT_FOCUS} onCommit={setFocusString} />
 
       <div className="mb-4 flex flex-wrap gap-2" data-testid="s3-picker">
         {Array.from({ length: dims.n_layer }, (_, l) =>
@@ -226,6 +244,7 @@ export default function S3Attention({
 
       <CodePanel
         forms={['head']}
+        active={active}
         highlightIds={highlightIds}
         onNodeHover={onNodeHover}
         onPrimitiveHelp={setHelpFor}

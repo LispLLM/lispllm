@@ -1,4 +1,5 @@
-import { useSyncExternalStore } from 'react';
+import { useExternalStoreSelector } from './selector';
+import type { EqualityFn } from './selector';
 
 export type LeftView = 'learn' | 'files';
 export type RightTab = 'lesson' | 'trace' | 'environment' | 'references' | 'model';
@@ -56,6 +57,7 @@ function load(): WorkspaceState {
 
 let state = load();
 const listeners = new Set<() => void>();
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
 
 function persist(): void {
   if (typeof localStorage === 'undefined') return;
@@ -64,9 +66,21 @@ function persist(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
 }
 
+function schedulePersist(): void {
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    persist();
+  }, 120);
+}
+
 function emit(next: Partial<WorkspaceState>): void {
+  const entries = Object.entries(next) as Array<
+    [keyof WorkspaceState, WorkspaceState[keyof WorkspaceState]]
+  >;
+  if (entries.every(([key, value]) => Object.is(state[key], value))) return;
   state = { ...state, ...next };
-  persist();
+  if (entries.some(([key]) => key !== 'selectedNodeId')) schedulePersist();
   for (const listener of listeners) listener();
 }
 
@@ -74,15 +88,16 @@ export function getWorkspaceState(): WorkspaceState {
   return state;
 }
 
-export function useWorkspaceState(): WorkspaceState {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    getWorkspaceState,
-    getWorkspaceState,
-  );
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function useWorkspaceState<Selection = WorkspaceState>(
+  selector: (current: WorkspaceState) => Selection = (current) => current as unknown as Selection,
+  isEqual: EqualityFn<Selection> = Object.is,
+): Selection {
+  return useExternalStoreSelector(subscribe, getWorkspaceState, selector, isEqual);
 }
 
 export function setActiveLesson(lesson: number, updateHash = true): void {
