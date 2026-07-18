@@ -1,0 +1,12 @@
+dist
+node_modules
+pnpm-lock.yaml
+starter.md
+train
+public/checkpoints
+public/model.lisp
+public/kernels-ref.lisp
+playwright-report
+test-results
+*.png
+*.ico

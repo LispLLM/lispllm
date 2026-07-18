@@ -1,0 +1,9 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+train/venv/
+train/data/
+train/__pycache__/
+*.pt
+.DS_Store
