@@ -69,3 +69,57 @@ Deviations (logged per §1.3/§1.6):
 
 Exit gate: 64 unit tests green — 13 native kernel tests + 15 equivalence tests (3 random
 shapes per op, |Δ| < 1e-5; layernorm/gelu at 1e-4 for float32 vs Lisp double-precision math).
+
+## M3 — The model talks
+
+Built: `train/{get_data,train,export,verify}.py` + `src/model/load.ts` +
+`scripts/generate.ts` + golden parity test. Trained on Apple MPS (Python 3.14 /
+torch 2.13 — deviation from spec's "Python 3.11", wheels exist and all numerics match).
+
+Training (quick config, 351,552 params, seed 1337):
+
+```
+step     0 | train 4.5891 | val 4.5837 |      4s
+step   250 | train 2.5660 | val 2.5619 |     15s
+step   500 | train 2.3490 | val 2.3225 |     26s
+step   750 | train 2.1262 | val 2.1675 |     37s
+step  1000 | train 1.9978 | val 2.0576 |     47s
+step  1250 | train 1.8720 | val 1.9683 |     58s
+step  1500 | train 1.8111 | val 1.9133 |     69s
+```
+
+Target val ≤ 1.95 reached at step 1500 (69 s). 300-char sample at T=0.8 (PyTorch):
+
+```
+ROMEO: were's is discelitime and but cus thurkes
+Thou distings to chalting liken lies Sir,
+Is for is not fir them the good mamean's the seend,
+To flad Gap me murrne, far I wham throught is thou
+Turse hand lies but good I guls
+Thround hat they but reest shore thanch to pearton,
+Enether nament broth me slent
+```
+
+Export: 61 tensors, 351,552 int8 bytes (0.34 MB ≤ 1.5 MB budget). Per-head QKV slicing and
+[out,in]→[in,out] transpose done in export.py. verify.py greedy continuation of "ROMEO: ":
+`"ROMEO: I will the stall"`.
+
+**Golden parity: PASS** — the Lisp `gpt` on the shipped checkpoint reproduces all 16 argmaxes
+and top-5 logits within |Δ| ≤ 1e-3. Live param count == manifest count.
+
+Interpreter generation (`pnpm cli:generate "ROMEO: " 300`, seed 1337): 300 chars in 12.2 s =
+**24.7 chars/s** in Node (target ≥ 10, stretch 20). Sample (mostly-formed words, play format):
+
+```
+To band this sen bing brird.
+I dist there and the of think earfuly.
+
+PRIOLIETH:
+
+Nir, lo the same to fir the good his to his witen.
+
+For Ment, trowmran rigness han son givenin moset mange.
+```
+
+Artifacts committed: `public/checkpoints/shakespeare-quick/{model.bin, manifest.json,
+golden.json}`, `train/train.log`. (`ckpt.pt` is gitignored; the site builds without retraining.)

@@ -1,0 +1,16 @@
+step     0 | train 4.5891 | val 4.5837 |      4s
+step   250 | train 2.5660 | val 2.5619 |     15s
+step   500 | train 2.3490 | val 2.3225 |     26s
+step   750 | train 2.1262 | val 2.1675 |     37s
+step  1000 | train 1.9978 | val 2.0576 |     47s
+step  1250 | train 1.8720 | val 1.9683 |     58s
+step  1500 | train 1.8111 | val 1.9133 |     69s
+best val 1.9133
+--- sample (T=0.8) ---
+ROMEO: were's is discelitime and but cus thurkes
+Thou distings to chalting liken lies Sir,
+Is for is not fir them the good mamean's the seend,
+To flad Gap me murrne, far I wham throught is thou
+Turse hand lies but good I guls
+Thround hat they but reest shore thanch to pearton,
+Enether nament broth me slent
