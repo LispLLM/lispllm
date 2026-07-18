@@ -14,6 +14,14 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'iphone-se', use: { ...devices['iPhone SE'] } },
+    {
+      // iPhone SE *viewport* per spec §4, emulated on chromium
+      name: 'iphone-se',
+      use: {
+        ...devices['iPhone SE'],
+        defaultBrowserType: 'chromium',
+        browserName: 'chromium',
+      },
+    },
   ],
 });

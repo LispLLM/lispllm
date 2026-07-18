@@ -123,3 +123,34 @@ For Ment, trowmran rigness han son givenin moset mange.
 
 Artifacts committed: `public/checkpoints/shakespeare-quick/{model.bin, manifest.json,
 golden.json}`, `train/train.log`. (`ckpt.pt` is gitignored; the site builds without retraining.)
+
+## M4 — Living page core
+
+Built: `src/model/{image,trace}.ts`, `src/store/app-store.ts`,
+`src/components/{CodePanel,TensorView,ProbBars,Repl,Header,Cite}.tsx`,
+`src/sections/{S0Hero,S1NextChar}.tsx`, boot pipeline in App.tsx, e2e tests 1–3.
+
+Architecture decisions (logged per §1.2/1.6):
+
+- **Knob edits are span-addressed against the canonical source** (`{at, text}`), resolved to
+  node ids at rebuild. Rebuild = print canonical+edits → re-read → fresh env → bind weights
+  (by reference) → evaluate → replay history. The re-read program is the single truth for
+  display, evaluation, AND trace keys — the rendered code is literally what runs (INV-2).
+- **Separate UI PRNG stream** (`uiRng`, seed ⊕ golden-ratio constant) for hero/paced
+  generation, so UI streams never perturb the image PRNG: REPL outputs stay a pure function
+  of (checkpoint, seed, knobEdits, replHistory) per INV-6. The sampling itself uses the
+  native `sample` kernel and the image's `gpt`/`temperature` — no re-implemented math (INV-1).
+- REPL submissions evaluate incrementally (deterministically identical to replay); knob edits
+  trigger a full rebuild with history replay.
+- iPhone SE project emulates the _viewport_ on chromium (spec §4 says "iPhone SE viewport";
+  webkit binary not required).
+
+Measured (Node, Apple Silicon; spec budgets in parens):
+
+- untraced forward at full ctx 96: **49.8 ms median** (≤ 60 ms)
+- traced forward, 64-char focus: **31.6 ms median** (≤ 500 ms)
+- image rebuild with 2 history entries: **0.2 ms median** (≤ 50 ms)
+- sustained generation: **26.5 chars/s** over 200 chars (≥ 10)
+- bundle: 61.1 KB gz (≤ 350 KB)
+
+Exit gate: e2e 1–3 green on chromium + iphone-se (6/6); all 67 unit tests green.
