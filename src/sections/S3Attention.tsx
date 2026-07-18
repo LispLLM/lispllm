@@ -11,7 +11,13 @@ import { getImage, setFocusString, useAppState } from '../store/app-store';
 const DEFAULT_FOCUS = 'To be, or not to be: that is the question';
 const glyph = (ch: string) => (ch === ' ' ? '␣' : ch === '\n' ? '⏎' : ch);
 
-export default function S3Attention() {
+export default function S3Attention({
+  labOnly = false,
+  active = true,
+}: {
+  labOnly?: boolean;
+  active?: boolean;
+}) {
   const { imageVersion, focusString, trace } = useAppState();
   const img = getImage();
   const dims = img.checkpoint.manifest.dims;
@@ -113,18 +119,26 @@ export default function S3Attention() {
   );
 
   return (
-    <section id="sec-3" className="mx-auto max-w-measure px-4 py-16 font-mono">
-      <h2 className="mb-4 text-xl text-paper">;; §3 attention is three questions</h2>
-      <p className="mb-4 text-sm leading-6 text-dim">
-        Every position asks three questions of every earlier position: what am I looking for (q),
-        what do you contain (k), and what will you pass along (v)
-        <Cite n={1} />
-        <Cite n={7} />. The matrix below is <span className="text-paper">weights</span> — how much
-        each character (row) attends to each earlier character (column). Hover a cell to see the
-        pair; the code that computed it lights up. The dark upper triangle is{' '}
-        <span className="text-paper">causal-mask</span>: the future is hidden, always
-        <Cite n={10} />.
-      </p>
+    <section
+      id="sec-3"
+      hidden={labOnly && !active}
+      className={labOnly ? 'min-w-0 p-3 font-mono' : 'mx-auto max-w-measure px-4 py-16 font-mono'}
+    >
+      {!labOnly && (
+        <>
+          <h2 className="mb-4 text-xl text-paper">;; §3 attention is three questions</h2>
+          <p className="mb-4 text-sm leading-6 text-dim">
+            Every position asks three questions of every earlier position: what am I looking for
+            (q), what do you contain (k), and what will you pass along (v)
+            <Cite n={1} />
+            <Cite n={7} />. The matrix below is <span className="text-paper">weights</span> — how
+            much each character (row) attends to each earlier character (column). Hover a cell to
+            see the pair; the code that computed it lights up. The dark upper triangle is{' '}
+            <span className="text-paper">causal-mask</span>: the future is hidden, always
+            <Cite n={10} />.
+          </p>
+        </>
+      )}
 
       <input
         data-testid="s3-focus"
@@ -218,9 +232,11 @@ export default function S3Attention() {
         testId="s3-code"
       />
       {helpFor && <KernelRef name={helpFor} onClose={() => setHelpFor(null)} />}
-      <p className="mt-3 text-sm text-dim">
-        try: <span className="text-amber">(shape (wq (nth 0 (heads (nth 0 layers)))))</span>
-      </p>
+      {!labOnly && (
+        <p className="mt-3 text-sm text-dim">
+          try: <span className="text-amber">(shape (wq (nth 0 (heads (nth 0 layers)))))</span>
+        </p>
+      )}
     </section>
   );
 }

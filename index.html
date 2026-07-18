@@ -17,6 +17,14 @@
     <meta property="og:type" content="website" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link
+      rel="preload"
+      href="/checkpoints/shakespeare-quick/manifest.json"
+      as="fetch"
+      crossorigin
+    />
+    <link rel="preload" href="/checkpoints/shakespeare-quick/model.bin" as="fetch" crossorigin />
+    <link rel="preload" href="/model.lisp" as="fetch" crossorigin />
   </head>
   <body>
     <div id="root"></div>

@@ -4,8 +4,20 @@
  * scrollSection } plus UI flags and the live trace.
  */
 import { useSyncExternalStore } from 'react';
-import type { Image, KnobEdit, ReplLine } from '../model/image';
+import { Image } from '../model/image';
+import type { KnobEdit, ReplLine } from '../model/image';
 import type { Trace } from '../model/trace';
+import { readProgram } from '../lisp/reader';
+import { LispError } from '../lisp/types';
+
+export interface SourceDiagnostic {
+  kind: 'syntax' | 'runtime' | 'contract';
+  message: string;
+  from: number;
+  to: number;
+  line: number;
+  col: number;
+}
 
 export interface AppState {
   status: 'loading' | 'ready' | 'error';
@@ -24,6 +36,14 @@ export interface AppState {
   refsOpen: boolean;
   openRef: number | null;
   toast: string | null;
+  /** Live editor draft; the active image continues using appliedSource until Run succeeds. */
+  sourceText: string;
+  appliedSource: string;
+  bundledSource: string;
+  sourceDirty: boolean;
+  sourceApplying: boolean;
+  sourceDiagnostics: SourceDiagnostic[];
+  replDraft: string;
   /** set while a generation stream is running and definitions changed under it */
   staleGeneration: boolean;
 }
@@ -44,10 +64,18 @@ let state: AppState = {
   refsOpen: false,
   openRef: null,
   toast: null,
+  sourceText: '',
+  appliedSource: '',
+  bundledSource: '',
+  sourceDirty: false,
+  sourceApplying: false,
+  sourceDiagnostics: [],
+  replDraft: '',
   staleGeneration: false,
 };
 
 let image: Image | null = null;
+let initialSeed = 1337;
 const listeners = new Set<() => void>();
 
 function emit(next: Partial<AppState>): void {
@@ -83,7 +111,17 @@ export function setLoading(loaded: number, total: number): void {
 
 export function setImage(img: Image): void {
   image = img;
-  emit({ status: 'ready', imageVersion: img.version });
+  initialSeed = img.seed;
+  emit({
+    status: 'ready',
+    imageVersion: img.version,
+    seed: img.seed,
+    sourceText: img.program.source,
+    appliedSource: img.program.source,
+    bundledSource: img.modelSource,
+    sourceDirty: false,
+    sourceDiagnostics: [],
+  });
 }
 
 export function setLoadError(message: string): void {
@@ -92,6 +130,10 @@ export function setLoadError(message: string): void {
 
 /** Full deterministic rebuild from (seed, knobEdits, replHistory). */
 function rebuildNow(knobEdits: KnobEdit[], replHistory: string[], uiEcho?: string[]): void {
+  if (state.sourceDirty) {
+    emit({ toast: 'run or revert the editor draft before changing source controls' });
+    return;
+  }
   const img = getImage();
   const transcript = img.rebuild(knobEdits, replHistory);
   // re-tag ui-originated entries
@@ -109,6 +151,10 @@ function rebuildNow(knobEdits: KnobEdit[], replHistory: string[], uiEcho?: strin
     replHistory,
     transcript,
     imageVersion: img.version,
+    sourceText: img.program.source,
+    appliedSource: img.program.source,
+    sourceDirty: false,
+    sourceDiagnostics: [],
     staleGeneration: true,
   });
   scheduleRetrace();
@@ -149,13 +195,25 @@ export function removeKnobEdit(at: number): void {
 /** (reset!) — restore the initial image, clear knob edits and history. */
 export function resetImage(): void {
   uiEchoed.length = 0;
-  const img = getImage();
-  img.rebuild([], []);
+  const current = getImage();
+  const img = new Image(
+    current.checkpoint,
+    state.bundledSource || current.modelSource,
+    initialSeed,
+  );
+  image = img;
   emit({
+    seed: initialSeed,
     knobEdits: [],
     replHistory: [],
     transcript: [{ kind: 'output', text: ';; image reset to initial state' }],
     imageVersion: img.version,
+    sourceText: img.program.source,
+    appliedSource: img.program.source,
+    sourceDirty: false,
+    sourceApplying: false,
+    sourceDiagnostics: [],
+    replDraft: '',
     staleGeneration: true,
     toast: null,
   });
@@ -164,11 +222,123 @@ export function resetImage(): void {
 
 /** Restore full state from a share link (§12.4). */
 export function restoreState(seed: number, knobEdits: KnobEdit[], replHistory: string[]): void {
-  const img = getImage();
-  img.seed = seed;
+  const current = getImage();
+  const img = new Image(current.checkpoint, state.bundledSource || current.modelSource, seed);
+  image = img;
   const transcript = img.rebuild(knobEdits, replHistory);
-  emit({ seed, knobEdits, replHistory, transcript, imageVersion: img.version });
+  emit({
+    seed,
+    knobEdits,
+    replHistory,
+    transcript,
+    imageVersion: img.version,
+    sourceText: img.program.source,
+    appliedSource: img.program.source,
+    sourceDirty: false,
+    sourceApplying: false,
+    sourceDiagnostics: [],
+  });
   scheduleRetrace();
+}
+
+/** Restore an exact custom source (share/local state) and replay history atomically. */
+export function restoreSourceState(seed: number, source: string, replHistory: string[]): boolean {
+  const previousSeed = state.seed;
+  emit({ seed });
+  const ok = applySource(source, replHistory);
+  if (!ok) emit({ seed: previousSeed });
+  return ok;
+}
+
+function diagnosticFromError(err: unknown, kind: SourceDiagnostic['kind']): SourceDiagnostic {
+  const span = err instanceof LispError ? err.span : undefined;
+  const message = err instanceof Error ? err.message : String(err);
+  return {
+    kind: message.startsWith('model contract:') ? 'contract' : kind,
+    message,
+    from: span?.start ?? 0,
+    to: Math.max(span?.end ?? 1, (span?.start ?? 0) + 1),
+    line: span?.line ?? 1,
+    col: span?.col ?? 1,
+  };
+}
+
+/** Parse-only diagnostics used while typing; never mutates the live image. */
+export function validateSource(source: string): SourceDiagnostic[] {
+  try {
+    readProgram(source);
+    return [];
+  } catch (err) {
+    return [diagnosticFromError(err, 'syntax')];
+  }
+}
+
+export function setSourceText(source: string): void {
+  emit({
+    sourceText: source,
+    sourceDirty: source !== state.appliedSource,
+    sourceDiagnostics: validateSource(source),
+  });
+}
+
+/**
+ * Build an isolated candidate and only replace the one live image after parse,
+ * evaluation, replay, and the UI model contract all succeed.
+ */
+export function applySource(source = state.sourceText, replayHistory = state.replHistory): boolean {
+  const syntax = validateSource(source);
+  if (syntax.length > 0) {
+    emit({ sourceDiagnostics: syntax, sourceApplying: false });
+    return false;
+  }
+  emit({ sourceApplying: true });
+  try {
+    const current = getImage();
+    const candidate = new Image(current.checkpoint, source, state.seed);
+    const transcript = candidate.rebuild([], replayHistory);
+    candidate.assertModelContract(state.focusString || 'To be');
+    image = candidate;
+    uiEchoed.length = 0;
+    emit({
+      knobEdits: [],
+      replHistory: replayHistory,
+      transcript,
+      imageVersion: candidate.version,
+      sourceText: candidate.program.source,
+      appliedSource: candidate.program.source,
+      sourceDirty: false,
+      sourceApplying: false,
+      sourceDiagnostics: [],
+      staleGeneration: true,
+      toast: 'model.lisp applied',
+    });
+    scheduleRetrace();
+    return true;
+  } catch (err) {
+    emit({
+      sourceApplying: false,
+      sourceDiagnostics: [diagnosticFromError(err, 'runtime')],
+      toast: 'source failed — the last good model is still running',
+    });
+    return false;
+  }
+}
+
+export function revertSourceDraft(): void {
+  emit({
+    sourceText: state.appliedSource,
+    sourceDirty: false,
+    sourceDiagnostics: [],
+    toast: 'editor reverted to the running model',
+  });
+}
+
+export function restoreBundledSourceDraft(): void {
+  emit({
+    sourceText: state.bundledSource,
+    sourceDirty: state.bundledSource !== state.appliedSource,
+    sourceDiagnostics: validateSource(state.bundledSource),
+  });
 }
 
 export function setFocusString(s: string): void {
@@ -190,6 +360,10 @@ export function setRefsOpen(open: boolean, ref: number | null = null): void {
 
 export function setToast(message: string | null): void {
   emit({ toast: message });
+}
+
+export function setReplDraft(text: string): void {
+  emit({ replDraft: text });
 }
 
 export function appendTranscript(lines: ReplLine[]): void {

@@ -15,10 +15,17 @@ async function loadApp(page: Page): Promise<{ errors: string[]; foreign: string[
   return { errors, foreign };
 }
 
+async function openLesson(page: Page, lesson: number): Promise<void> {
+  await page.getByTestId('activity-learn').click();
+  await page.getByTestId(`lesson-nav-${lesson}`).click();
+  await page.getByTestId('activity-lesson').click();
+}
+
 test('1. load → weights fetched → hero generates ≥ 40 chars within 15 s; no console errors; no non-origin requests', async ({
   page,
 }) => {
   const { errors, foreign } = await loadApp(page);
+  await openLesson(page, 0);
   await expect(page.getByTestId('hero-output')).toBeVisible({ timeout: 15_000 });
   await expect
     .poll(async () => (await page.getByTestId('hero-output').innerText()).length, {
@@ -31,6 +38,7 @@ test('1. load → weights fetched → hero generates ≥ 40 chars within 15 s; n
 
 test('2. pause hero → ≥ 5 probability bars, probabilities sum ≈ 1 (±0.02)', async ({ page }) => {
   await loadApp(page);
+  await openLesson(page, 0);
   await expect(page.getByTestId('hero-output')).toBeVisible({ timeout: 15_000 });
   await page.getByTestId('hero-toggle').click(); // pause
   const bars = page.getByTestId('hero-probs').getByTestId('prob-bars').locator('[data-prob]');
@@ -46,6 +54,7 @@ test('2. pause hero → ≥ 5 probability bars, probabilities sum ≈ 1 (±0.02)
 
 test('3. typing in §1 updates bars within 500 ms', async ({ page }) => {
   await loadApp(page);
+  await openLesson(page, 1);
   await expect(page.getByTestId('s1-input')).toBeVisible({ timeout: 15_000 });
   const bars = page.getByTestId('s1-probs').locator('[data-prob]');
   await expect.poll(async () => bars.count(), { timeout: 5_000 }).toBeGreaterThan(0);

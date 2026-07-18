@@ -11,7 +11,13 @@ import { clearStaleGeneration, getImage, setFocusString, useAppState } from '../
 const PROMPT = 'ROMEO: ';
 const TOTAL = 400;
 
-export default function S0Hero() {
+export default function S0Hero({
+  labOnly = false,
+  active = true,
+}: {
+  labOnly?: boolean;
+  active?: boolean;
+}) {
   const { status, imageVersion, staleGeneration } = useAppState();
   const [text, setText] = useState(PROMPT);
   const [playing, setPlaying] = useState(true);
@@ -60,7 +66,7 @@ export default function S0Hero() {
       cancelled = true;
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [status, playing, speed, step, updateProbs]);
+  }, [status, imageVersion, playing, speed, step, updateProbs]);
 
   useEffect(() => {
     if (!playing && status === 'ready' && tokens.current.length > 0) updateProbs();
@@ -75,14 +81,24 @@ export default function S0Hero() {
   };
 
   return (
-    <section id="sec-0" className="mx-auto max-w-4xl px-4 pb-20 pt-16">
-      <h1 className="text-3xl leading-tight text-paper">A language model in one page of Lisp.</h1>
-      <p className="mt-3 max-w-measure text-dim">
-        It's running in your browser right now. Every figure below is computed by the code beside
-        it. Pause it. Poke it. Break it.
-      </p>
+    <section
+      id="sec-0"
+      hidden={labOnly && !active}
+      className={labOnly ? 'min-w-0 p-3' : 'mx-auto max-w-4xl px-4 pb-20 pt-16'}
+    >
+      {!labOnly && (
+        <>
+          <h1 className="text-3xl leading-tight text-paper">
+            A language model in one page of Lisp.
+          </h1>
+          <p className="mt-3 max-w-measure text-dim">
+            It's running in your browser right now. Every figure below is computed by the code
+            beside it. Pause it. Poke it. Break it.
+          </p>
+        </>
+      )}
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
+      <div className={`${labOnly ? '' : 'mt-8'} grid min-w-0 gap-4 xl:grid-cols-2`}>
         <CodePanel forms={['temperature', 'next-token', 'generate']} testId="hero-code" />
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-3 text-sm">
@@ -142,9 +158,11 @@ export default function S0Hero() {
           )}
         </div>
       </div>
-      <p className="mt-6 text-sm text-dim">
-        try: press pause, then step through one character at a time
-      </p>
+      {!labOnly && (
+        <p className="mt-6 text-sm text-dim">
+          try: press pause, then step through one character at a time
+        </p>
+      )}
     </section>
   );
 }

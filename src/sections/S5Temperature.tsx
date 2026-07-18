@@ -34,11 +34,18 @@ function findScaleExpr(img: ReturnType<typeof getImage>): Ast | null {
   return null;
 }
 
-export default function S5Temperature() {
-  const { imageVersion, focusString, knobEdits } = useAppState();
+export default function S5Temperature({
+  labOnly = false,
+  active = true,
+}: {
+  labOnly?: boolean;
+  active?: boolean;
+}) {
+  const { imageVersion, focusString, knobEdits, sourceDirty } = useAppState();
   const img = getImage();
   const [helpFor, setHelpFor] = useState<string | null>(null);
   const { ref: sectionRef, visible } = useNearViewport<HTMLElement>();
+  const shouldCompute = labOnly ? active : visible;
 
   const tempSpan = useMemo(() => img.canonicalSpanFor('temperature'), [img]);
   const scaleExpr = useMemo(() => findScaleExpr(img), [img]);
@@ -65,7 +72,7 @@ export default function S5Temperature() {
   // deferred until the section scrolls near the viewport to keep boot fast
   const samples = useMemo(() => {
     void imageVersion;
-    if (!visible) return null;
+    if (!shouldCompute) return null;
     try {
       return TEMPS.map((T) => {
         const rng = new Rng(42);
@@ -82,7 +89,7 @@ export default function S5Temperature() {
     } catch {
       return null;
     }
-  }, [img, focus, imageVersion, visible]);
+  }, [img, focus, imageVersion, shouldCompute]);
 
   const setTemp = (t: number) => {
     if (tempSpan == null) return;
@@ -99,17 +106,27 @@ export default function S5Temperature() {
   };
 
   return (
-    <section ref={sectionRef} id="sec-5" className="mx-auto max-w-measure px-4 py-16 font-mono">
-      <h2 className="mb-4 text-xl text-paper">;; §5 temperature is one number in the code</h2>
-      <p className="mb-4 text-sm leading-6 text-dim">
-        Before sampling, the logits are divided by <span className="text-paper">temperature</span>
-        . Low values sharpen the distribution toward the single most likely character; high values
-        flatten it toward noise
-        <Cite n={11} />. The knob below edits the literal in the source — drag it and watch the{' '}
-        <span className="text-paper">0.8</span> change, here and in §6. It works the other way too:{' '}
-        <span className="text-paper">(set! temperature 2.0)</span> in the REPL moves the knob. One
-        image.
-      </p>
+    <section
+      ref={sectionRef}
+      id="sec-5"
+      hidden={labOnly && !active}
+      className={labOnly ? 'min-w-0 p-3 font-mono' : 'mx-auto max-w-measure px-4 py-16 font-mono'}
+    >
+      {!labOnly && (
+        <>
+          <h2 className="mb-4 text-xl text-paper">;; §5 temperature is one number in the code</h2>
+          <p className="mb-4 text-sm leading-6 text-dim">
+            Before sampling, the logits are divided by{' '}
+            <span className="text-paper">temperature</span>
+            . Low values sharpen the distribution toward the single most likely character; high
+            values flatten it toward noise
+            <Cite n={11} />. The knob below edits the literal in the source — drag it and watch the{' '}
+            <span className="text-paper">0.8</span> change, here and in §6. It works the other way
+            too: <span className="text-paper">(set! temperature 2.0)</span> in the REPL moves the
+            knob. One image.
+          </p>
+        </>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <label htmlFor="s5-knob" className="text-sm text-dim">
@@ -123,6 +140,8 @@ export default function S5Temperature() {
           max={3}
           step={0.05}
           value={temperature}
+          disabled={sourceDirty}
+          title={sourceDirty ? 'Run or revert the editor draft first' : undefined}
           className="w-64 max-w-full accent-amber"
           onChange={(e) => setTemp(Number(e.target.value))}
         />
@@ -140,6 +159,7 @@ export default function S5Temperature() {
         <button
           data-testid="s5-topk"
           aria-pressed={topKOn}
+          disabled={sourceDirty}
           className={`rounded border px-3 py-1 text-sm ${
             topKOn ? 'border-amber text-amber' : 'border-edge text-dim hover:text-paper'
           }`}
@@ -163,23 +183,29 @@ export default function S5Temperature() {
       <CodePanel
         forms={['temperature', 'next-token']}
         onPrimitiveHelp={setHelpFor}
-        editable={(() => {
-          const lit = img.findDefineLiteral('temperature');
-          if (!lit) return undefined;
-          const base = temperature;
-          return [
-            {
-              nodeId: lit.id,
-              onDrag: (dx: number) => setTemp(Math.min(3, Math.max(0.1, base + dx * 0.01))),
-            },
-          ];
-        })()}
+        editable={
+          sourceDirty
+            ? undefined
+            : (() => {
+                const lit = img.findDefineLiteral('temperature');
+                if (!lit) return undefined;
+                const base = temperature;
+                return [
+                  {
+                    nodeId: lit.id,
+                    onDrag: (dx: number) => setTemp(Math.min(3, Math.max(0.1, base + dx * 0.01))),
+                  },
+                ];
+              })()
+        }
         testId="s5-code"
       />
       {helpFor && <KernelRef name={helpFor} onClose={() => setHelpFor(null)} />}
-      <p className="mt-3 text-sm text-dim">
-        try: <span className="text-amber">(set! temperature 2.0)</span>
-      </p>
+      {!labOnly && (
+        <p className="mt-3 text-sm text-dim">
+          try: <span className="text-amber">(set! temperature 2.0)</span>
+        </p>
+      )}
     </section>
   );
 }

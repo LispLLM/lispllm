@@ -7,7 +7,13 @@ import ProbBars from '../components/ProbBars';
 import { getImage, useAppState } from '../store/app-store';
 import Cite from '../components/Cite';
 
-export default function S1NextChar() {
+export default function S1NextChar({
+  labOnly = false,
+  active = true,
+}: {
+  labOnly?: boolean;
+  active?: boolean;
+}) {
   const { status } = useAppState();
   const [input, setInput] = useState('The king said');
   const [probs, setProbs] = useState<Float32Array | null>(null);
@@ -25,14 +31,22 @@ export default function S1NextChar() {
   }, [input, status]);
 
   return (
-    <section id="sec-1" className="mx-auto max-w-4xl px-4 py-16">
-      <h2 className="text-2xl text-paper">§1 It only ever does one thing.</h2>
-      <p className="mt-3 max-w-measure text-dim">
-        Type below. After every keystroke the model reads your whole text and produces one
-        distribution: the probability of each possible next character. Everything ChatGPT does is
-        this, at scale, in a loop <Cite n={12} />.
-      </p>
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
+    <section
+      id="sec-1"
+      hidden={labOnly && !active}
+      className={labOnly ? 'min-w-0 p-3' : 'mx-auto max-w-4xl px-4 py-16'}
+    >
+      {!labOnly && (
+        <>
+          <h2 className="text-2xl text-paper">§1 It only ever does one thing.</h2>
+          <p className="mt-3 max-w-measure text-dim">
+            Type below. After every keystroke the model reads your whole text and produces one
+            distribution: the probability of each possible next character. Everything ChatGPT does
+            is this, at scale, in a loop <Cite n={12} />.
+          </p>
+        </>
+      )}
+      <div className={`${labOnly ? '' : 'mt-6'} grid min-w-0 gap-4 xl:grid-cols-2`}>
         <textarea
           data-testid="s1-input"
           aria-label="prompt text"
@@ -48,9 +62,11 @@ export default function S1NextChar() {
           )}
         </div>
       </div>
-      <p className="mt-6 text-sm text-dim">
-        try: end your text mid-word and watch it finish the word
-      </p>
+      {!labOnly && (
+        <p className="mt-6 text-sm text-dim">
+          try: end your text mid-word and watch it finish the word
+        </p>
+      )}
     </section>
   );
 }

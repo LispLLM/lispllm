@@ -220,6 +220,43 @@ export class Image {
     return this.canonical.source;
   }
 
+  /** Fail before an edited source becomes the live image if core UI contracts are missing. */
+  assertModelContract(focus = 'To be'): void {
+    const required = [
+      'gpt',
+      'next-token',
+      'temperature',
+      'ablated',
+      'embed',
+      'head',
+      'attention',
+      'block',
+      'generate',
+    ];
+    for (const name of required) {
+      try {
+        this.lookup(name);
+      } catch {
+        throw new LispError(`model contract: missing ${name}`);
+      }
+    }
+    if (typeof this.lookup('temperature') !== 'number') {
+      throw new LispError('model contract: temperature must be a number');
+    }
+    // Exercise the path every live visualization depends on before swapping images.
+    this.probs(focus || 'To be');
+  }
+
+  /** Smallest AST node containing a source offset in the active program. */
+  nodeAtOffset(offset: number): Ast | null {
+    return findContainingNode(this.program.forms, offset);
+  }
+
+  /** Find an AST node by its active-program id (trace/editor linking). */
+  nodeById(id: number): Ast | null {
+    return findNodeById(this.program.forms, id);
+  }
+
   /** Mean negative log-likelihood per character of `text` (one forward pass). */
   nll(text: string): number {
     const ctx = this.checkpoint.manifest.ctx;
@@ -246,6 +283,30 @@ function findNodeAt(forms: Ast[], at: number): Ast | null {
     if (f.span.start === at) return f;
     if (f.span.start <= at && at < f.span.end && f.kind === 'list') {
       const inner = findNodeAt(f.items.concat(f.tail ? [f.tail] : []), at);
+      if (inner) return inner;
+    }
+  }
+  return null;
+}
+
+function findContainingNode(forms: Ast[], offset: number): Ast | null {
+  for (const f of forms) {
+    if (f.span.start <= offset && offset < f.span.end) {
+      if (f.kind === 'list') {
+        const inner = findContainingNode(f.items.concat(f.tail ? [f.tail] : []), offset);
+        if (inner) return inner;
+      }
+      return f;
+    }
+  }
+  return null;
+}
+
+function findNodeById(forms: Ast[], id: number): Ast | null {
+  for (const f of forms) {
+    if (f.id === id) return f;
+    if (f.kind === 'list') {
+      const inner = findNodeById(f.items.concat(f.tail ? [f.tail] : []), id);
       if (inner) return inner;
     }
   }

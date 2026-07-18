@@ -10,7 +10,13 @@ import { getImage, useAppState } from '../store/app-store';
 
 const glyph = (ch: string) => (ch === ' ' ? '␣' : ch === '\n' ? '⏎' : ch);
 
-export default function S2Embeddings() {
+export default function S2Embeddings({
+  labOnly = false,
+  active = true,
+}: {
+  labOnly?: boolean;
+  active?: boolean;
+}) {
   const { imageVersion } = useAppState();
   const img = getImage();
   const charset = img.checkpoint.manifest.charset;
@@ -29,16 +35,25 @@ export default function S2Embeddings() {
   );
 
   return (
-    <section id="sec-2" className="mx-auto max-w-measure px-4 py-16 font-mono">
-      <h2 className="mb-4 text-xl text-paper">;; §2 letters become vectors</h2>
-      <p className="mb-4 text-sm leading-6 text-dim">
-        The model can't read. It knows {charset.length} characters, and each one is a row of{' '}
-        {tokEmb ? tokEmb.shape[1] : '…'} numbers in <span className="text-paper">tok-emb</span> —
-        learned, not designed. Characters that behave alike end up near each other. Click a letter
-        below and look at its nearest neighbors by cosine similarity: uppercase and lowercase pairs
-        usually find each other, because Shakespeare uses them in the same places. Lookup is just{' '}
-        <span className="text-paper">rows</span> — no arithmetic, a table.
-      </p>
+    <section
+      id="sec-2"
+      hidden={labOnly && !active}
+      className={labOnly ? 'min-w-0 p-3 font-mono' : 'mx-auto max-w-measure px-4 py-16 font-mono'}
+    >
+      {!labOnly && (
+        <>
+          <h2 className="mb-4 text-xl text-paper">;; §2 letters become vectors</h2>
+          <p className="mb-4 text-sm leading-6 text-dim">
+            The model can't read. It knows {charset.length} characters, and each one is a row of{' '}
+            {tokEmb ? tokEmb.shape[1] : '…'} numbers in <span className="text-paper">tok-emb</span>{' '}
+            — learned, not designed. Characters that behave alike end up near each other. Click a
+            letter below and look at its nearest neighbors by cosine similarity: uppercase and
+            lowercase pairs usually find each other, because Shakespeare uses them in the same
+            places. Lookup is just <span className="text-paper">rows</span> — no arithmetic, a
+            table.
+          </p>
+        </>
+      )}
 
       <div
         className="mb-4 flex flex-wrap gap-1"
@@ -89,9 +104,11 @@ export default function S2Embeddings() {
 
       <CodePanel forms={['embed']} onPrimitiveHelp={setHelpFor} testId="s2-code" />
       {helpFor && <KernelRef name={helpFor} onClose={() => setHelpFor(null)} />}
-      <p className="mt-3 text-sm text-dim">
-        try: <span className="text-amber">(shape tok-emb)</span>
-      </p>
+      {!labOnly && (
+        <p className="mt-3 text-sm text-dim">
+          try: <span className="text-amber">(shape tok-emb)</span>
+        </p>
+      )}
     </section>
   );
 }

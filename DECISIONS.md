@@ -221,3 +221,64 @@ iphone-se. Copy audit: no banned words, no exclamation points.
 
 Exit gate (§19 Definition of Done): all budgets PASS; one image; code-is-truth echoes;
 kernel refs honest; offline after load; deterministic under seed 1337.
+
+## M7 — Single-page IDE workbench redesign
+
+User-directed redesign: replaced the long scrolling narrative with a fixed-height teaching
+IDE. The activity rail switches Learn, Files, Lesson output, Trace, Environment, References,
+and Editor views. Desktop keeps the lesson navigator, editable source, contextual output,
+and REPL/problems panel visible together; iPhone SE uses the same destinations as exclusive
+panes with a fixed bottom activity rail. Every pane owns its scroll container.
+
+Built:
+
+- `Workbench`, `ActivityRail`, `LearnSidebar`, `SourceEditor`, `RightPanel`, `BottomPanel`,
+  `StatusBar`, keyboard/pointer `ResizableHandle`, persistent environment/trace/reference/model
+  inspectors, source problems, and a read-only pure-Lisp kernel source view.
+- A §0–§8 lesson registry that presents one guided document and one contextual live lab at a
+  time. The original section controls and their one-image behavior remain intact.
+- A CodeMirror 6 Lisp editor with line numbers, accessible high-contrast highlighting,
+  history/search, bracket matching, diagnostics, lesson-span decoration, AST/trace linking,
+  and explicit Run via button or Cmd/Ctrl+Enter.
+
+State and correctness decisions:
+
+- **Model and workspace state are separate.** `app-store` owns the image/source lifecycle;
+  `workspace-store` owns active lesson, tabs, pane visibility/sizes, editor file, and selected
+  AST node. Workspace layout persists independently in localStorage.
+- **Source application is atomic.** Typing updates only `sourceText`. Run parses and evaluates
+  a candidate Image, replays REPL history, and checks the UI model contract before swapping the
+  global live Image. Syntax, runtime, or contract failure reports a source-span diagnostic and
+  leaves the last good model active. Source-derived controls are disabled while a draft differs.
+- **Local source recovery** stores the exact applied source plus latest draft, seed, knob edits,
+  and REPL history against a fingerprint of the bundled model. A model update invalidates stale
+  local source safely.
+- **Share codec v2** remains backward-compatible with v1 and uses a prefix/suffix custom-source
+  patch plus bundled-source fingerprint. Oldest REPL entries may be dropped to meet the 2 KB URL
+  cap, but custom source is never dropped. If exact source alone cannot fit, Share explicitly
+  copies full exact-state JSON (including the original undropped history) instead.
+- Mobile defers first initialization of never-opened editor/output panes, then keeps each mounted
+  after first use so local interaction state survives navigation. Manifest, weights, and source
+  are preloaded and consumed concurrently. This removed mobile startup blocking time without a
+  worker, route, backend, or external request.
+
+Validation added: e2e 12–17 cover button and keyboard Run, syntax/contract diagnostics,
+last-good recovery, applied-source plus dirty-draft reload, compact custom-source sharing,
+trace-to-editor spans, keyboard resizing, mobile pane navigation, toolbar visibility, and
+horizontal overflow. Existing e2e 1–11 were migrated to explicit Learn → lesson → Output
+navigation rather than weakened.
+
+Final measured gates (local production build, Apple Silicon):
+
+- unit: **74 passed**; e2e: **27 passed, 7 intentional project skips** across desktop Chromium
+  and iPhone SE Chromium viewport.
+- JS bundle: **~195 KB gz** excluding weights (≤ 350 KB).
+- untraced forward at ctx 96: **47.7 ms**; traced forward: **32.4 ms**; rebuild with two history
+  entries: **0.2 ms**; sustained generation: **26.6 chars/s**.
+- Lighthouse 13 desktop static preset: **performance 100, accessibility 100**, TBT 0 ms,
+  LCP 0.8 s. Mobile accessibility: **100**; mobile functional/overflow behavior is asserted in
+  Playwright.
+
+Exit gate: fixed workbench is responsive and keyboard-operable; source edits remain code-is-truth
+and last-good safe; exact local/share restoration is fingerprinted; original model invariants and
+all budgets remain green.

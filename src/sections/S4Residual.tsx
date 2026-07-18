@@ -9,13 +9,20 @@ import { getImage, replSubmit, useAppState } from '../store/app-store';
 
 const CONT_CHARS = 60;
 
-export default function S4Residual() {
-  const { imageVersion, focusString, trace } = useAppState();
+export default function S4Residual({
+  labOnly = false,
+  active = true,
+}: {
+  labOnly?: boolean;
+  active?: boolean;
+}) {
+  const { imageVersion, focusString, trace, sourceDirty } = useAppState();
   const img = getImage();
   const dims = img.checkpoint.manifest.dims;
   const [helpFor, setHelpFor] = useState<string | null>(null);
   const [baseline, setBaseline] = useState<{ text: string; nll: number } | null>(null);
   const { ref: sectionRef, visible } = useNearViewport<HTMLElement>();
+  const shouldCompute = labOnly ? active : visible;
 
   const focus = focusString || 'To be, or not to be';
 
@@ -54,10 +61,10 @@ export default function S4Residual() {
 
   const current = useMemo(() => {
     void imageVersion;
-    if (!visible) return null;
+    if (!shouldCompute) return null;
     return computeContinuation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [img, focus, imageVersion, visible]);
+  }, [img, focus, imageVersion, shouldCompute]);
 
   // remember the un-ablated continuation as the baseline for the diff
   useEffect(() => {
@@ -87,17 +94,27 @@ export default function S4Residual() {
   const ppl = (nll: number) => Math.exp(nll);
 
   return (
-    <section ref={sectionRef} id="sec-4" className="mx-auto max-w-measure px-4 py-16 font-mono">
-      <h2 className="mb-4 text-xl text-paper">;; §4 the residual stream</h2>
-      <p className="mb-4 text-sm leading-6 text-dim">
-        Layers don't replace the representation; they add to it. Each block reads from a shared
-        stream, computes a correction, and writes it back — that's the two{' '}
-        <span className="text-paper">add</span> calls in <span className="text-paper">block</span>
-        <Cite n={9} />. The bars show how loudly each layer speaks. Below, the ablation lab: switch
-        off any head and <span className="text-paper">ablated</span> changes in the code — watch the
-        REPL echo, then read what the wounded model writes
-        <Cite n={8} />.
-      </p>
+    <section
+      ref={sectionRef}
+      id="sec-4"
+      hidden={labOnly && !active}
+      className={labOnly ? 'min-w-0 p-3 font-mono' : 'mx-auto max-w-measure px-4 py-16 font-mono'}
+    >
+      {!labOnly && (
+        <>
+          <h2 className="mb-4 text-xl text-paper">;; §4 the residual stream</h2>
+          <p className="mb-4 text-sm leading-6 text-dim">
+            Layers don't replace the representation; they add to it. Each block reads from a shared
+            stream, computes a correction, and writes it back — that's the two{' '}
+            <span className="text-paper">add</span> calls in{' '}
+            <span className="text-paper">block</span>
+            <Cite n={9} />. The bars show how loudly each layer speaks. Below, the ablation lab:
+            switch off any head and <span className="text-paper">ablated</span> changes in the code
+            — watch the REPL echo, then read what the wounded model writes
+            <Cite n={8} />.
+          </p>
+        </>
+      )}
 
       {contribs.length > 0 && (
         <div className="mb-6 space-y-2" data-testid="s4-stream">
@@ -136,6 +153,8 @@ export default function S4Residual() {
                   key={h}
                   data-testid={`s4-abl-${l}-${h}`}
                   aria-pressed={on}
+                  disabled={sourceDirty}
+                  title={sourceDirty ? 'Run or revert the editor draft first' : undefined}
                   className={`h-8 w-14 rounded border text-xs ${
                     on
                       ? 'border-red-400 bg-red-400/20 text-red-300 line-through'
@@ -193,9 +212,11 @@ export default function S4Residual() {
         testId="s4-code"
       />
       {helpFor && <KernelRef name={helpFor} onClose={() => setHelpFor(null)} />}
-      <p className="mt-3 text-sm text-dim">
-        try: <span className="text-amber">(set! ablated '((0 . 0) (0 . 1)))</span>
-      </p>
+      {!labOnly && (
+        <p className="mt-3 text-sm text-dim">
+          try: <span className="text-amber">(set! ablated '((0 . 0) (0 . 1)))</span>
+        </p>
+      )}
     </section>
   );
 }

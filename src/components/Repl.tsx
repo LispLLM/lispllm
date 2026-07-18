@@ -4,7 +4,8 @@
  * Shift+Enter, history via ↑/↓, paren-balance indicator, (help), (reset!).
  */
 import { useEffect, useRef, useState } from 'react';
-import { replSubmit, resetImage, setReplOpen, useAppState } from '../store/app-store';
+import { replSubmit, resetImage, setReplDraft, setReplOpen, useAppState } from '../store/app-store';
+import { setBottomOpen, setBottomTab } from '../store/workspace-store';
 
 function parenBalance(s: string): number {
   let depth = 0;
@@ -43,9 +44,8 @@ const LINE_PREFIX: Record<string, string> = {
   inspect: '',
 };
 
-export default function Repl() {
-  const { replOpen, transcript, imageVersion } = useAppState();
-  const [input, setInput] = useState('');
+export default function Repl({ embedded = false }: { embedded?: boolean }) {
+  const { replOpen, transcript, imageVersion, replDraft: input } = useAppState();
   const [histIdx, setHistIdx] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -67,7 +67,14 @@ export default function Repl() {
         setTimeout(() => inputRef.current?.focus(), 50);
       } else if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
+        setBottomTab('repl');
+        setBottomOpen(true);
         setReplOpen(true);
+        setTimeout(() => inputRef.current?.focus(), 50);
+      } else if (e.key === 'j' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setBottomTab('repl');
+        setBottomOpen(true);
         setTimeout(() => inputRef.current?.focus(), 50);
       }
     };
@@ -82,7 +89,7 @@ export default function Repl() {
     if (!src) return;
     inputHistory.current.push(src);
     setHistIdx(null);
-    setInput('');
+    setReplDraft('');
     if (src === '(reset!)') {
       resetImage();
       return;
@@ -101,17 +108,17 @@ export default function Repl() {
       e.preventDefault();
       const idx = histIdx === null ? h.length - 1 : Math.max(0, histIdx - 1);
       setHistIdx(idx);
-      setInput(h[idx]);
+      setReplDraft(h[idx]);
     } else if (e.key === 'ArrowDown' && histIdx !== null) {
       e.preventDefault();
       const h = inputHistory.current;
       const idx = histIdx + 1;
       if (idx >= h.length) {
         setHistIdx(null);
-        setInput('');
+        setReplDraft('');
       } else {
         setHistIdx(idx);
-        setInput(h[idx]);
+        setReplDraft(h[idx]);
       }
     }
   };
@@ -119,12 +126,16 @@ export default function Repl() {
   return (
     <div
       data-testid="repl-drawer"
-      className={`fixed inset-x-0 bottom-0 z-50 border-t border-edge bg-panel ${replOpen ? 'h-[40vh] max-sm:h-[85vh]' : ''}`}
+      className={
+        embedded
+          ? 'flex h-full min-h-0 flex-col bg-panel'
+          : `fixed inset-x-0 bottom-0 z-50 border-t border-edge bg-panel ${replOpen ? 'h-[40vh] max-sm:h-[85vh]' : ''}`
+      }
     >
-      {replOpen && (
+      {(embedded || replOpen) && (
         <div
           ref={scrollRef}
-          className="h-[calc(100%-3rem)] overflow-y-auto px-4 py-2 font-mono text-sm"
+          className="min-h-0 flex-1 overflow-y-auto px-4 py-2 font-mono text-sm"
           data-testid="repl-history"
         >
           <div key={imageVersion === -1 ? 'never' : 'transcript'}>
@@ -138,13 +149,15 @@ export default function Repl() {
         </div>
       )}
       <div className="flex items-start gap-2 px-4 py-2">
-        <button
-          className="text-dim hover:text-amber"
-          aria-label={replOpen ? 'collapse repl' : 'expand repl'}
-          onClick={() => setReplOpen(!replOpen)}
-        >
-          {replOpen ? '▾' : '▴'}
-        </button>
+        {!embedded && (
+          <button
+            className="text-dim hover:text-amber"
+            aria-label={replOpen ? 'collapse repl' : 'expand repl'}
+            onClick={() => setReplOpen(!replOpen)}
+          >
+            {replOpen ? '▾' : '▴'}
+          </button>
+        )}
         <span className="pt-0.5 font-mono text-sm text-amber">λ&gt;</span>
         <textarea
           ref={inputRef}
@@ -154,9 +167,9 @@ export default function Repl() {
           spellCheck={false}
           placeholder="(help) lists primitives — everything on this page is in scope"
           className="min-w-0 flex-1 resize-none bg-transparent font-mono text-sm text-paper outline-none placeholder:text-dim/60"
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => setReplDraft(e.target.value)}
           onKeyDown={onKeyDown}
-          onFocus={() => !replOpen && setReplOpen(true)}
+          onFocus={() => !embedded && !replOpen && setReplOpen(true)}
         />
         <span
           data-testid="paren-balance"

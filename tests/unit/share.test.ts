@@ -37,4 +37,57 @@ describe('share codec', () => {
     const state = { seed: 2, knobEdits: [], replHistory: ['(display "héllo — ⏎")'] };
     expect(decodeShare(encodeShare(state).hash)).toEqual(state);
   });
+
+  it('round-trips a compact custom-source patch and workspace context', () => {
+    const bundledSource = '(define temperature 0.8)\n(define width 64)\n';
+    const source = '(define temperature 1.2)\n(define width 64)\n';
+    const encoded = encodeShare({
+      seed: 7,
+      knobEdits: [],
+      replHistory: [],
+      source,
+      bundledSource,
+      lesson: 5,
+      rightTab: 'environment',
+    });
+    expect(encoded.overflow).toBe(false);
+    expect(decodeShare(encoded.hash, bundledSource)).toEqual({
+      seed: 7,
+      knobEdits: [],
+      replHistory: [],
+      source,
+      lesson: 5,
+      rightTab: 'environment',
+    });
+  });
+
+  it('rejects a source patch against a different bundled model', () => {
+    const encoded = encodeShare({
+      seed: 7,
+      knobEdits: [],
+      replHistory: [],
+      source: '(define x 2)',
+      bundledSource: '(define x 1)',
+    });
+    expect(decodeShare(encoded.hash, '(define x 0)')).toBeNull();
+  });
+
+  it('reports exact-state overflow instead of silently dropping custom source', () => {
+    const encoded = encodeShare({
+      seed: 7,
+      knobEdits: [],
+      replHistory: ['(display 1)'],
+      source: `prefix-${'x'.repeat(5_000)}-suffix`,
+      bundledSource: 'prefix-suffix',
+    });
+    expect(encoded.overflow).toBe(true);
+    expect(encoded.hash).toBe('');
+    expect(encoded.serialized).toContain('"v":2');
+    const exported = JSON.parse(encoded.serialized) as {
+      source: string;
+      replHistory: string[];
+    };
+    expect(exported.source).toContain('x'.repeat(5_000));
+    expect(exported.replHistory).toEqual(['(display 1)']);
+  });
 });
