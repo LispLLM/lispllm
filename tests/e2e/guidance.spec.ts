@@ -138,6 +138,16 @@ test('22. preset and custom accents persist, stay share-local, and reset safely'
       ),
     )
     .toBe('#55c7d9');
+  await expect(page.getByTestId('status-bar')).toHaveCSS('background-color', 'rgb(85, 199, 217)');
+  await expect(page.getByTestId('status-bar')).toHaveCSS('color', 'rgb(15, 14, 12)');
+  await expect(page.getByTestId('activity-learn').locator('.bg-amber')).toHaveCSS(
+    'background-color',
+    'rgb(85, 199, 217)',
+  );
+  await expect(page.getByTestId('next-action').locator('.text-amber').first()).toHaveCSS(
+    'color',
+    'rgb(85, 199, 217)',
+  );
 
   await page.reload();
   await expect(page.getByTestId('btn-accent')).toBeVisible({ timeout: 20_000 });
