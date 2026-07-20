@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PanelInfoButton from './PanelInfoButton';
 
 export default function KernelSourceView() {
   const [source, setSource] = useState(';; loading kernels-ref.lisp…');
@@ -21,6 +22,7 @@ export default function KernelSourceView() {
         <div className="flex h-9 items-center gap-2 border-r border-edge border-t-2 border-t-[#8fb0c0] bg-ink px-3 text-paper">
           <span className="text-[#8fb0c0]">λ</span> kernels-ref.lisp
           <span className="text-[10px] text-dim">read only</span>
+          <PanelInfoButton panel="kernels" />
         </div>
       </div>
       <pre className="min-h-0 flex-1 overflow-auto whitespace-pre p-4 text-xs leading-5 text-paper">

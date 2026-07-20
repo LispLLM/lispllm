@@ -6,6 +6,7 @@ import {
   useWorkspaceState,
 } from '../store/workspace-store';
 import { shallowEqual } from '../store/selector';
+import PanelInfoButton from './PanelInfoButton';
 
 function LessonList() {
   const activeLesson = useWorkspaceState((current) => current.activeLesson);
@@ -38,12 +39,14 @@ function FilesView() {
     <div className="py-2 text-xs" data-testid="files-view">
       <div className="px-3 py-1 text-[11px] uppercase tracking-wider text-dim">lispllm</div>
       <button
+        data-testid="file-model"
         className="flex min-h-8 w-full items-center gap-2 px-5 text-left text-paper hover:bg-paper/5"
         onClick={() => setEditorFile('model')}
       >
         <span className="text-amber">λ</span> model.lisp
       </button>
       <button
+        data-testid="file-kernels"
         className="flex min-h-8 w-full items-center gap-2 px-5 text-left text-paper hover:bg-paper/5"
         onClick={() => setEditorFile('kernels')}
       >
@@ -71,6 +74,9 @@ export default function LearnSidebar() {
     <aside className="flex h-full min-h-0 flex-col bg-panel" data-testid="left-sidebar">
       <div className="flex min-h-9 items-center border-b border-edge px-3 text-[11px] uppercase tracking-wider text-dim">
         {leftView === 'learn' ? 'Learn' : 'Explorer'}
+        <span className="ml-auto">
+          <PanelInfoButton panel={leftView === 'learn' ? 'learn' : 'files'} />
+        </span>
       </div>
       {leftView === 'learn' ? (
         <>

@@ -10,6 +10,7 @@ import { readProgram } from '../lisp/reader';
 import { LispError } from '../lisp/types';
 import { useExternalStoreSelector } from './selector';
 import type { EqualityFn } from './selector';
+import { recordLearningEvent } from './learning-store';
 
 export interface SourceDiagnostic {
   kind: 'syntax' | 'runtime' | 'contract';
@@ -336,6 +337,7 @@ export function applySource(source = state.sourceText, replayHistory = state.rep
       toast: 'model.lisp applied',
     });
     scheduleRetrace();
+    recordLearningEvent('source:applied');
     return true;
   } catch (err) {
     emit({

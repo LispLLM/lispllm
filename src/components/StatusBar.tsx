@@ -16,7 +16,7 @@ export default function StatusBar() {
   const manifest = getImage().checkpoint.manifest;
   return (
     <footer
-      className="flex h-6 shrink-0 items-center gap-4 bg-amber px-2 text-[11px] text-ink max-md:hidden"
+      className="flex h-6 shrink-0 items-center gap-4 bg-amber px-2 text-[11px] text-accent-foreground max-md:hidden"
       data-testid="status-bar"
     >
       <span>λ lispllm</span>

@@ -21,6 +21,7 @@ import {
   setRightTab,
   useWorkspaceState,
 } from '../store/workspace-store';
+import AccentPicker from './AccentPicker';
 
 function fmtParams(n: number): string {
   return n >= 1e6 ? `${(n / 1e6).toFixed(1)}m` : `${Math.round(n / 1e3)}k`;
@@ -81,6 +82,7 @@ export default function Header() {
       )}
       {sourceDirty && <span className="ml-3 text-amber">● draft</span>}
       <span className="flex-1" />
+      <AccentPicker />
       <button
         data-testid="btn-repl"
         className={`rounded px-2 py-1 hover:bg-paper/5 ${replOpen || bottomOpen ? 'text-amber' : 'text-paper'}`}

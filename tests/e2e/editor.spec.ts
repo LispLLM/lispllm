@@ -44,6 +44,7 @@ test('12. editor Run and Cmd/Ctrl+Enter atomically update the live model', async
     source.replace('(define temperature 0.8)', '(define temperature 1.2)'),
   );
   await expect(page.getByTestId('editor-dirty')).toBeVisible();
+  await expect(page.getByTestId('next-action')).toContainText('Run the model.lisp draft');
   await expect(page.getByTestId('btn-run-source')).toBeEnabled();
   await page.getByTestId('btn-run-source').click();
   await expect(page.getByTestId('editor-dirty')).not.toBeVisible();
@@ -73,6 +74,7 @@ test('13. syntax and contract failures preserve the last good model', async ({
 
   await replaceEditorSource(page, `${source}\n(`);
   await expect(page.getByTestId('editor-diagnostics')).toContainText('1 problem');
+  await expect(page.getByTestId('next-action')).toContainText('Fix 1 source problem');
   await expect(page.getByTestId('btn-run-source')).toBeDisabled();
 
   const invalidContract = source.replace('(define (gpt tokens)', '(define (gpt-broken tokens)');
@@ -164,8 +166,9 @@ test('16. trace selection links to source and separators resize by keyboard', as
   await expect(page.locator('.cm-trace-node').first()).toBeVisible();
 
   const leftHandle = page.getByRole('separator', { name: 'resize learn sidebar' });
+  const leftMaximum = await leftHandle.getAttribute('aria-valuemax');
   await leftHandle.press('End');
-  await expect(leftHandle).toHaveAttribute('aria-valuenow', '520');
+  await expect(leftHandle).toHaveAttribute('aria-valuenow', leftMaximum!);
   const bottomHandle = page.getByRole('separator', { name: 'resize bottom panel' });
   await bottomHandle.press('Home');
   await expect(bottomHandle).toHaveAttribute('aria-valuenow', '120');

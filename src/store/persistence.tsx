@@ -9,6 +9,7 @@ import {
 } from './app-store';
 import { sourceFingerprint } from './share';
 import { shallowEqual } from './selector';
+import { isSafeCommentOnlyUpgrade } from './source-compat';
 
 const KEY = 'lispllm.source.v1';
 
@@ -27,11 +28,20 @@ export function restoreLocalSourceState(): boolean {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? '') as LocalSourceState;
     const state = getState();
-    if (saved.v !== 1 || saved.base !== sourceFingerprint(state.bundledSource)) return false;
+    const currentBase = sourceFingerprint(state.bundledSource);
+    const exactBase = saved.base === currentBase;
+    const safeCommentOnlyUpgrade = isSafeCommentOnlyUpgrade(
+      saved.base,
+      currentBase,
+      saved.customBase,
+    );
+    if (saved.v !== 1 || (!exactBase && !safeCommentOnlyUpgrade)) return false;
     const restored = saved.customBase
       ? restoreSourceState(saved.seed, saved.appliedSource, saved.replHistory)
       : (restoreState(saved.seed, saved.knobEdits, saved.replHistory), true);
-    if (restored && saved.sourceText !== saved.appliedSource) setSourceText(saved.sourceText);
+    if (restored && exactBase && saved.sourceText !== saved.appliedSource) {
+      setSourceText(saved.sourceText);
+    }
     return restored;
   } catch {
     return false;

@@ -1,18 +1,9 @@
 /** §7 — example mutations; environment and trace live in persistent inspector tabs. */
 import Cite from '../components/Cite';
-import { replSubmit, useAppState } from '../store/app-store';
-import { setBottomTab, setRightTab } from '../store/workspace-store';
-
-const EXAMPLES: Array<{ label: string; code: string }> = [
-  {
-    label: 'gelu → relu',
-    code: '(define (gelu x) (lists->tensor (map (lambda (r) (map (lambda (v) (max v 0)) r)) (tensor->lists x))))',
-  },
-  { label: 'ablate layer 2', code: "(set! ablated '((2 . 0) (2 . 1) (2 . 2) (2 . 3)))" },
-  { label: 'T = 3', code: '(set! temperature 3.0)' },
-  { label: 'shape of tok-emb', code: '(shape tok-emb)' },
-  { label: 'generate', code: "(generate '(20 15 25) 40)" },
-];
+import { PLAYGROUND_EXAMPLES } from '../content/learning';
+import { useAppState } from '../store/app-store';
+import { setRightTab } from '../store/workspace-store';
+import { openReplWithDraft } from '../components/learning-actions';
 
 export default function S7Playground({
   labOnly = false,
@@ -38,21 +29,20 @@ export default function S7Playground({
           </p>
         </>
       )}
-      <div className="mb-4 flex flex-wrap gap-2" data-testid="s7-examples">
-        {EXAMPLES.map((example) => {
+      <div className="mb-4 grid gap-2 sm:grid-cols-2" data-testid="s7-examples">
+        {PLAYGROUND_EXAMPLES.map((example) => {
           const mutates = /define|set!/.test(example.code);
           return (
             <button
               key={example.label}
-              className="rounded border border-edge px-2 py-1 text-xs text-dim hover:border-amber hover:text-amber disabled:opacity-40"
+              className="rounded border border-edge bg-ink/40 p-2 text-left text-xs text-dim hover:border-amber disabled:opacity-40"
               disabled={sourceDirty && mutates}
-              onClick={() => {
-                replSubmit(example.code, mutates);
-                setBottomTab('repl');
-              }}
+              onClick={() => openReplWithDraft(example.code)}
               title={example.code}
             >
-              {example.label}
+              <span className="block text-paper">{example.label}</span>
+              <span className="mt-1 block text-[11px] leading-4">{example.explanation}</span>
+              <span className="mt-1 block text-amber">Put in REPL →</span>
             </button>
           );
         })}

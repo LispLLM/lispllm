@@ -139,7 +139,15 @@ export default function App() {
         </div>
         <div className="flex flex-1 items-center justify-center p-8">
           <div className="w-full max-w-md">
-            <div className="mb-3 text-sm text-paper">opening model.lisp</div>
+            <h1 className="mb-2 text-2xl leading-tight text-paper">
+              A language model in one page of Lisp
+            </h1>
+            <p className="mb-4 text-lg leading-8 text-dim">
+              The model runs entirely in this browser. Its editable Lisp source, lessons, live
+              output, inspectors, and REPL all share one environment. While 0.34 MB of trained
+              weights load, nothing is sent to a server.
+            </p>
+            <div className="mb-3 text-sm text-dim">opening model.lisp</div>
             <div className="h-1 overflow-hidden rounded bg-edge">
               <div
                 className="h-full bg-amber transition-[width]"

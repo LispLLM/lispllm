@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Tensor } from '../lisp/types';
 import { printNumber } from '../lisp/printer';
+import { useThemeState } from '../store/theme-store';
 
 export interface TensorViewProps {
   tensor: Tensor;
@@ -50,6 +51,7 @@ export default function TensorView({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hover, setHover] = useState<[number, number] | null>(null);
   const [selected, setSelected] = useState<[number, number] | null>(null);
+  const accent = useThemeState((current) => current.accent);
 
   const r = tensor.shape.length === 2 ? tensor.shape[0] : 1;
   const c = tensor.shape.length === 2 ? tensor.shape[1] : tensor.shape[0];
@@ -90,15 +92,17 @@ export default function TensorView({
       ctx.lineWidth = 1.5;
       ctx.strokeRect(cell[1] * cs + 0.75, cell[0] * cs + 0.75, cs - 1.5, cs - 1.5);
     };
-    if (highlight) mark(highlight, '#e6a23c');
-    if (selected) mark(selected, '#e6a23c');
+    if (highlight) mark(highlight, accent);
+    if (selected) mark(selected, accent);
     if (hover) {
-      ctx.strokeStyle = 'rgba(230,162,60,0.6)';
+      ctx.strokeStyle = accent;
+      ctx.globalAlpha = 0.6;
       ctx.lineWidth = 1;
       ctx.strokeRect(0.5, hover[0] * cs + 0.5, c * cs - 1, cs - 1);
       ctx.strokeRect(hover[1] * cs + 0.5, 0.5, cs - 1, r * cs - 1);
+      ctx.globalAlpha = 1;
     }
-  }, [tensor, r, c, cs, min, max, sequential, hover, selected, highlight]);
+  }, [tensor, r, c, cs, min, max, sequential, hover, selected, highlight, accent]);
 
   const cellFromEvent = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>): [number, number] => {

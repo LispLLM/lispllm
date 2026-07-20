@@ -8,7 +8,7 @@ export interface ShareState {
   seed: number;
   knobEdits: KnobEdit[];
   replHistory: string[];
-  /** Exact applied source for v2 custom-source shares. */
+  /** Exact applied source for v2/v3 custom-source shares. */
   source?: string;
   lesson?: number;
   rightTab?: 'lesson' | 'trace' | 'environment' | 'references' | 'model';
@@ -97,7 +97,7 @@ export function encodeShare(state: ShareState & { bundledSource?: string }): {
   let dropped = 0;
   const exactExport = JSON.stringify({
     format: 'lispllm-state',
-    v: 2,
+    v: 3,
     seed: state.seed,
     knobEdits: state.knobEdits,
     replHistory: state.replHistory,
@@ -113,11 +113,12 @@ export function encodeShare(state: ShareState & { bundledSource?: string }): {
         ? makeSourcePatch(state.bundledSource, state.source)
         : undefined;
     const serialized = JSON.stringify({
-      v: 2,
+      v: 3,
       seed: state.seed,
       k: patch ? [] : state.knobEdits,
       h: history,
       x: patch,
+      b: state.bundledSource === undefined ? undefined : sourceFingerprint(state.bundledSource),
       l: state.lesson,
       r: state.rightTab,
     });
@@ -139,14 +140,21 @@ export function decodeShare(hash: string, bundledSource?: string): ShareState | 
       k: KnobEdit[];
       h: string[];
       x?: unknown;
+      b?: unknown;
       l?: number;
       r?: ShareState['rightTab'];
     };
     if (
-      ![1, 2].includes(o.v) ||
+      ![1, 2, 3].includes(o.v) ||
       typeof o.seed !== 'number' ||
       !Array.isArray(o.k) ||
       !Array.isArray(o.h)
+    )
+      return null;
+    if (
+      o.v === 3 &&
+      typeof o.b === 'string' &&
+      (bundledSource === undefined || sourceFingerprint(bundledSource) !== o.b)
     )
       return null;
     if (o.x !== undefined && (!isSourcePatch(o.x) || bundledSource === undefined)) return null;

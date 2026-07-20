@@ -8,6 +8,7 @@ import TensorView from '../components/TensorView';
 import { attentionWeights, attentionValues, nodeSource } from '../model/queries';
 import { getImage, setFocusString, useAppState } from '../store/app-store';
 import { shallowEqual } from '../store/selector';
+import { recordLearningEvent } from '../store/learning-store';
 
 const DEFAULT_FOCUS = 'To be, or not to be: that is the question';
 const glyph = (ch: string) => (ch === ' ' ? '␣' : ch === '\n' ? '⏎' : ch);
@@ -131,9 +132,14 @@ export default function S3Attention({
             key={i}
             data-hl={hl ? kind : undefined}
             className={`inline-block min-w-[14px] rounded-sm px-0.5 text-center text-xs ${
-              hl ? 'bg-amber text-ink' : 'text-dim'
+              hl ? 'bg-amber text-accent-foreground' : 'text-dim'
             } ${kind === 'q' && selectedPos === i ? 'underline decoration-amber' : ''}`}
-            onClick={() => kind === 'q' && setSelectedPos(i)}
+            onClick={() => {
+              if (kind === 'q') {
+                setSelectedPos(i);
+                recordLearningEvent('attention:position-selected');
+              }
+            }}
           >
             {glyph(ch)}
           </span>
@@ -164,7 +170,13 @@ export default function S3Attention({
         </>
       )}
 
-      <FocusInput value={focusString || DEFAULT_FOCUS} onCommit={setFocusString} />
+      <FocusInput
+        value={focusString || DEFAULT_FOCUS}
+        onCommit={(value) => {
+          setFocusString(value);
+          if (value !== DEFAULT_FOCUS) recordLearningEvent('attention:focus-edited');
+        }}
+      />
 
       <div className="mb-4 flex flex-wrap gap-2" data-testid="s3-picker">
         {Array.from({ length: dims.n_layer }, (_, l) =>
@@ -179,6 +191,7 @@ export default function S3Attention({
                   : 'border-edge text-dim hover:text-paper'
               }`}
               onClick={() => {
+                if (layer !== l || head !== h) recordLearningEvent('attention:head-selected');
                 setLayer(l);
                 setHead(h);
               }}
@@ -193,12 +206,18 @@ export default function S3Attention({
         <div className="mb-4 space-y-2 overflow-x-auto">
           <div className="text-xs text-dim">keys (attended to) →</div>
           {strip('k')}
-          <div className={`relative inline-block ${weightsHover ? 'ring-2 ring-amber' : ''}`}>
+          <div
+            className={`relative inline-block ${weightsHover ? 'ring-2 ring-amber' : ''}`}
+            data-testid="s3-weights"
+          >
             <TensorView
               tensor={hit.tensor}
               maxWidth={560}
               onHover={(i, j) => setHoverCell([i, j])}
-              onSelect={(i) => setSelectedPos(i)}
+              onSelect={(i) => {
+                setSelectedPos(i);
+                recordLearningEvent('attention:position-selected');
+              }}
               highlight={hoverCell}
               ariaLabel={`attention weights layer ${layer} head ${head}`}
             />
@@ -209,7 +228,7 @@ export default function S3Attention({
                 preserveAspectRatio="none"
                 data-testid="s3-mask-overlay"
               >
-                <polygon points="100,0 0,0 100,100" fill="rgba(230,162,60,0.25)" />
+                <polygon points="100,0 0,0 100,100" fill="rgb(var(--accent-rgb) / 0.25)" />
               </svg>
             )}
           </div>

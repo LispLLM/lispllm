@@ -7,7 +7,9 @@ import { memo, useEffect, useRef, useState } from 'react';
 import type { ReplLine } from '../model/image';
 import { replSubmit, resetImage, setReplDraft, setReplOpen, useAppState } from '../store/app-store';
 import { shallowEqual } from '../store/selector';
+import { recordReplCommand } from '../store/learning-store';
 import { setBottomOpen, setBottomTab } from '../store/workspace-store';
+import PanelInfoButton from './PanelInfoButton';
 
 function parenBalance(s: string): number {
   let depth = 0;
@@ -117,6 +119,7 @@ export default function Repl({ embedded = false }: { embedded?: boolean }) {
       return;
     }
     replSubmit(src);
+    recordReplCommand(src);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -154,12 +157,26 @@ export default function Repl({ embedded = false }: { embedded?: boolean }) {
           : `fixed inset-x-0 bottom-0 z-50 border-t border-edge bg-panel ${replOpen ? 'h-[40vh] max-sm:h-[85vh]' : ''}`
       }
     >
+      {!embedded && replOpen && (
+        <div className="flex min-h-8 items-center border-b border-edge px-3 text-[11px] uppercase tracking-wider text-dim">
+          REPL
+          <span className="ml-auto">
+            <PanelInfoButton panel="repl" />
+          </span>
+        </div>
+      )}
       {(embedded || replOpen) && (
         <div
           ref={scrollRef}
           className="min-h-0 flex-1 overflow-y-auto px-4 py-2 font-mono text-sm"
           data-testid="repl-history"
         >
+          {transcript.length === 0 && (
+            <div className="mb-2 rounded border border-edge bg-ink/40 p-2 text-xs leading-5 text-dim">
+              Start with <span className="text-paper">(help)</span>. Press Enter to evaluate,
+              Shift+Enter for another line, and ↑/↓ to revisit commands.
+            </div>
+          )}
           <ReplTranscript transcript={transcript} />
         </div>
       )}

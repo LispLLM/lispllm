@@ -7,6 +7,7 @@ import KernelRef from '../components/KernelRef';
 import { residualContributions } from '../model/queries';
 import { getImage, replSubmit, useAppState } from '../store/app-store';
 import { shallowEqual } from '../store/selector';
+import { recordLearningEvent } from '../store/learning-store';
 
 const CONT_CHARS = 60;
 
@@ -78,7 +79,10 @@ export default function S4Residual({
   // remember the un-ablated continuation as the baseline for the diff
   useEffect(() => {
     if (current && ablated.size === 0) setBaseline(current);
-  }, [current, ablated]);
+    if (current && baseline && ablated.size > 0) {
+      recordLearningEvent('residual:comparison-ready');
+    }
+  }, [current, ablated, baseline]);
 
   const toggle = (l: number, h: number) => {
     // capture the un-ablated baseline now if the deferred compute hasn't run yet
@@ -89,7 +93,10 @@ export default function S4Residual({
     const next = new Set(ablated);
     const key = `${l}.${h}`;
     if (next.has(key)) next.delete(key);
-    else next.add(key);
+    else {
+      next.add(key);
+      recordLearningEvent('residual:head-ablated');
+    }
     const pairs = [...next]
       .sort()
       .map((k) => {

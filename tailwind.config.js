@@ -7,7 +7,8 @@ export default {
         ink: '#0f0e0c', // near-black warm gray
         paper: '#e8e4dc', // off-white
         dim: '#8a857a',
-        amber: '#e6a23c', // the one accent
+        amber: 'rgb(var(--accent-rgb) / <alpha-value>)', // runtime-selected accent
+        'accent-foreground': 'rgb(var(--accent-foreground-rgb) / <alpha-value>)',
         panel: '#181613',
         edge: '#2a2723',
       },

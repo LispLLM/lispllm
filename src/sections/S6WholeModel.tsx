@@ -4,6 +4,7 @@ import Cite from '../components/Cite';
 import CodePanel from '../components/CodePanel';
 import KernelRef from '../components/KernelRef';
 import { setToast, getImage, useAppState } from '../store/app-store';
+import { recordLearningEvent } from '../store/learning-store';
 
 /** Group manifest tensors into the defines that use them (computed, never hardcoded). */
 function paramShares(img: ReturnType<typeof getImage>) {
@@ -46,6 +47,7 @@ export default function S6WholeModel({
   const copy = async () => {
     await navigator.clipboard.writeText(img.program.source);
     setToast('model.lisp copied to clipboard');
+    recordLearningEvent('whole-model:copied');
   };
   const permalink = async () => {
     await navigator.clipboard.writeText(`${location.origin}${location.pathname}#sec-6`);
@@ -88,6 +90,7 @@ export default function S6WholeModel({
           {lineCount} lines
         </span>
         <button
+          data-testid="s6-copy"
           className="rounded border border-edge px-2 py-1 text-dim hover:text-amber"
           onClick={copy}
         >

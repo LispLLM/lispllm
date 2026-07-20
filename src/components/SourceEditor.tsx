@@ -42,6 +42,8 @@ import {
 } from '../store/app-store';
 import { setBottomTab, setSelectedNodeId, useWorkspaceState } from '../store/workspace-store';
 import { shallowEqual } from '../store/selector';
+import { recordLearningEvent } from '../store/learning-store';
+import PanelInfoButton from './PanelInfoButton';
 
 interface LispModeState {
   depth: number;
@@ -113,7 +115,7 @@ const lispLanguage = StreamLanguage.define(lispMode);
 
 const lispHighlightStyle = HighlightStyle.define([
   { tag: tags.comment, color: '#8a857a', fontStyle: 'italic' },
-  { tag: [tags.keyword, tags.operator], color: '#e6a23c' },
+  { tag: [tags.keyword, tags.operator], color: 'var(--accent)' },
   { tag: [tags.number, tags.bool, tags.atom], color: '#d4b5ff' },
   { tag: tags.string, color: '#9fcf9f' },
   { tag: [tags.variableName, tags.name], color: '#e8e4dc' },
@@ -147,10 +149,10 @@ const editorTheme = EditorView.theme(
   {
     '&': { height: '100%', backgroundColor: '#0f0e0c', color: '#e8e4dc', fontSize: '13px' },
     '.cm-scroller': { overflow: 'auto', fontFamily: 'inherit', lineHeight: '1.6' },
-    '.cm-content': { caretColor: '#e6a23c', padding: '12px 0 48px' },
-    '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#e6a23c' },
+    '.cm-content': { caretColor: 'var(--accent)', padding: '12px 0 48px' },
+    '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--accent)' },
     '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
-      backgroundColor: 'rgba(230,162,60,.22)',
+      backgroundColor: 'rgb(var(--accent-rgb) / .22)',
     },
     '.cm-gutters': {
       backgroundColor: '#181613',
@@ -159,7 +161,7 @@ const editorTheme = EditorView.theme(
     },
     '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'rgba(232,228,220,.035)' },
     '.cm-focused': { outline: 'none' },
-    '.cm-lesson-range': { backgroundColor: 'rgba(230,162,60,.07)' },
+    '.cm-lesson-range': { backgroundColor: 'rgb(var(--accent-rgb) / .07)' },
     '.cm-trace-node': { backgroundColor: 'rgba(143,176,192,.18)', outline: '1px solid #8fb0c0' },
     '.cm-lintRange-error': { backgroundImage: 'none', textDecoration: 'underline wavy #f87171' },
     '.cm-tooltip': { backgroundColor: '#181613', border: '1px solid #2a2723', color: '#e8e4dc' },
@@ -367,7 +369,11 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-col bg-ink" data-testid="source-editor">
+    <section
+      className="flex h-full min-h-0 flex-col bg-ink"
+      data-testid="source-editor"
+      onFocusCapture={() => recordLearningEvent('whole-model:opened')}
+    >
       <div className="flex min-h-9 items-center border-b border-edge bg-panel text-xs">
         <div className="flex h-9 items-center gap-2 border-r border-edge border-t-2 border-t-amber bg-ink px-3 text-paper">
           <span className="text-amber">λ</span>
@@ -377,11 +383,12 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
               ●
             </span>
           )}
+          <PanelInfoButton panel="editor" />
         </div>
         <div className="ml-auto flex items-center gap-1 px-2">
           <button
             data-testid="btn-run-source"
-            className="rounded bg-amber px-2 py-1 font-semibold text-ink hover:bg-amber/90 disabled:opacity-50"
+            className="rounded bg-amber px-2 py-1 font-semibold text-accent-foreground hover:bg-amber/90 disabled:opacity-50"
             disabled={!sourceDirty || sourceApplying || sourceDiagnostics.length > 0}
             onClick={run}
             title="Run model.lisp (Cmd/Ctrl+Enter)"

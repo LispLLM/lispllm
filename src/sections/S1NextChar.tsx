@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import ProbBars from '../components/ProbBars';
 import { getImage, useAppState } from '../store/app-store';
 import Cite from '../components/Cite';
+import { recordLearningEvent } from '../store/learning-store';
 
 const INITIAL_PROMPT = 'The king said';
 
@@ -46,12 +47,14 @@ export default function S1NextChar({
   const status = useAppState((current) => current.status);
   const [input, setInput] = useState(INITIAL_PROMPT);
   const [probs, setProbs] = useState<Float32Array | null>(null);
+  const userEdited = useRef(false);
 
   useEffect(() => {
     if (status !== 'ready' || input.length === 0) return;
     const t = setTimeout(() => {
       try {
         setProbs(Float32Array.from(getImage().probs(input)));
+        if (userEdited.current) recordLearningEvent('next-char:probabilities-updated');
       } catch {
         setProbs(null);
       }
@@ -76,7 +79,15 @@ export default function S1NextChar({
         </>
       )}
       <div className={`${labOnly ? '' : 'mt-6'} grid min-w-0 gap-4 xl:grid-cols-2`}>
-        <PromptInput onCommit={setInput} />
+        <PromptInput
+          onCommit={(value) => {
+            if (value !== INITIAL_PROMPT) {
+              userEdited.current = true;
+              recordLearningEvent('next-char:prompt-edited');
+            }
+            setInput(value);
+          }}
+        />
         <div data-testid="s1-probs">
           {probs && status === 'ready' && (
             <ProbBars probs={probs} charset={getImage().checkpoint.manifest.charset} />

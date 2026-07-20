@@ -2,6 +2,7 @@ import { useAppState } from '../store/app-store';
 import { setBottomOpen, setBottomTab, useWorkspaceState } from '../store/workspace-store';
 import ProblemsPanel from './ProblemsPanel';
 import Repl from './Repl';
+import PanelInfoButton from './PanelInfoButton';
 
 export default function BottomPanel() {
   const sourceDiagnostics = useAppState((current) => current.sourceDiagnostics);
@@ -24,6 +25,7 @@ export default function BottomPanel() {
             <span className="text-red-400">{sourceDiagnostics.length}</span>
           )}
         </button>
+        <PanelInfoButton panel={bottomTab} />
         <span className="ml-auto px-3 text-dim">Cmd/Ctrl+J</span>
         <button
           className="h-8 px-3 text-dim hover:text-paper"

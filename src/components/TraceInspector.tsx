@@ -13,6 +13,7 @@ import {
 } from '../store/app-store';
 import { shallowEqual } from '../store/selector';
 import { setSelectedNodeId, useWorkspaceState } from '../store/workspace-store';
+import { recordLearningEvent } from '../store/learning-store';
 import TensorView from './TensorView';
 
 const TraceTreeNode = memo(function TraceTreeNodeComponent({
@@ -43,7 +44,10 @@ const TraceTreeNode = memo(function TraceTreeNodeComponent({
               : 'text-dim hover:bg-paper/5 hover:text-paper'
         }`}
         style={{ paddingLeft: 8 + depth * 12 }}
-        onClick={() => setSelectedNodeId(node.id)}
+        onClick={() => {
+          setSelectedNodeId(node.id);
+          recordLearningEvent('trace:node-selected');
+        }}
         title={source}
       >
         <span className="mr-1 text-dim">{children.length > 0 ? '⌄' : '·'}</span>

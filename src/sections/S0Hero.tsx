@@ -8,6 +8,7 @@ import CodePanel from '../components/CodePanel';
 import ProbBars from '../components/ProbBars';
 import { clearStaleGeneration, getImage, setFocusString, useAppState } from '../store/app-store';
 import { shallowEqual } from '../store/selector';
+import { recordLearningEvent } from '../store/learning-store';
 
 const PROMPT = 'ROMEO: ';
 const TOTAL = 400;
@@ -103,6 +104,10 @@ export default function S0Hero({
     if (!playing && status === 'ready' && tokens.current.length > 0) updateProbs();
   }, [playing, status, updateProbs]);
 
+  useEffect(() => {
+    if (text.length >= PROMPT.length + 10) recordLearningEvent('hero:generated-10');
+  }, [text.length]);
+
   const regenerate = () => {
     tokens.current = [];
     setText(PROMPT);
@@ -136,7 +141,10 @@ export default function S0Hero({
             <button
               data-testid="hero-toggle"
               className="rounded border border-edge px-3 py-1 text-paper hover:border-amber"
-              onClick={() => setPlaying(!playing)}
+              onClick={() => {
+                if (playing) recordLearningEvent('hero:paused');
+                setPlaying(!playing);
+              }}
             >
               {playing ? 'pause' : 'play'}
             </button>
@@ -147,6 +155,7 @@ export default function S0Hero({
               onClick={() => {
                 step();
                 updateProbs();
+                recordLearningEvent('hero:step');
               }}
             >
               step

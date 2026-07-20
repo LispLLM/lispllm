@@ -7,6 +7,7 @@ import KernelRef from '../components/KernelRef';
 import TensorView from '../components/TensorView';
 import { nearestRows } from '../model/queries';
 import { getImage, useAppState } from '../store/app-store';
+import { recordLearningEvent } from '../store/learning-store';
 
 const glyph = (ch: string) => (ch === ' ' ? '␣' : ch === '\n' ? '⏎' : ch);
 
@@ -71,7 +72,10 @@ export default function S2Embeddings({
                 ? 'border-amber bg-amber/20 text-amber'
                 : 'border-edge text-dim hover:text-paper'
             }`}
-            onClick={() => setSelected(i)}
+            onClick={() => {
+              if (i !== selected) recordLearningEvent('embeddings:character-selected');
+              setSelected(i);
+            }}
           >
             {glyph(ch)}
           </button>
@@ -95,9 +99,16 @@ export default function S2Embeddings({
           <span className="text-amber">'{glyph(charset[selected])}'</span>
           <span className="text-dim">: </span>
           {neighbors.map(({ row, sim }) => (
-            <span key={row} className="mr-3 text-paper">
+            <button
+              key={row}
+              className="mr-3 rounded px-1 text-paper hover:bg-paper/5 hover:text-amber"
+              onClick={() => {
+                setSelected(row);
+                recordLearningEvent('embeddings:neighbor-selected');
+              }}
+            >
               '{glyph(charset[row])}' <span className="text-dim">{sim.toFixed(2)}</span>
-            </span>
+            </button>
           ))}
         </div>
       )}

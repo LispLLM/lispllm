@@ -6,6 +6,7 @@ import LessonLabs from './LessonLabs';
 import ModelInfo from './ModelInfo';
 import ReferencesView from './ReferencesView';
 import TraceInspector from './TraceInspector';
+import PanelInfoButton from './PanelInfoButton';
 
 const tabs = [
   ['lesson', 'Lesson'],
@@ -45,6 +46,7 @@ export default function RightPanel() {
             </button>
           ))}
         </div>
+        <PanelInfoButton panel={rightTab} />
         <button
           className="h-9 shrink-0 px-3 text-dim hover:text-paper"
           aria-label="close output panel"

@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { getImage, useAppState } from '../store/app-store';
 import { shallowEqual } from '../store/selector';
+import { recordLearningEvent } from '../store/learning-store';
 
 export default function ModelInfo() {
   const { imageVersion, seed, sourceDirty, appliedSource } = useAppState(
@@ -35,6 +36,10 @@ export default function ModelInfo() {
     ['defines', values.defines],
     ['seed', seed],
   ];
+
+  useEffect(() => {
+    recordLearningEvent('model-info:opened');
+  }, []);
 
   return (
     <section className="h-full overflow-y-auto p-4 text-xs" data-testid="model-info">

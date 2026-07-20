@@ -78,7 +78,7 @@ torch 2.13 — deviation from spec's "Python 3.11", wheels exist and all numeric
 
 Training (quick config, 351,552 params, seed 1337):
 
-```
+```text
 step     0 | train 4.5891 | val 4.5837 |      4s
 step   250 | train 2.5660 | val 2.5619 |     15s
 step   500 | train 2.3490 | val 2.3225 |     26s
@@ -90,7 +90,7 @@ step  1500 | train 1.8111 | val 1.9133 |     69s
 
 Target val ≤ 1.95 reached at step 1500 (69 s). 300-char sample at T=0.8 (PyTorch):
 
-```
+```text
 ROMEO: were's is discelitime and but cus thurkes
 Thou distings to chalting liken lies Sir,
 Is for is not fir them the good mamean's the seend,
@@ -110,7 +110,7 @@ and top-5 logits within |Δ| ≤ 1e-3. Live param count == manifest count.
 Interpreter generation (`pnpm cli:generate "ROMEO: " 300`, seed 1337): 300 chars in 12.2 s =
 **24.7 chars/s** in Node (target ≥ 10, stretch 20). Sample (mostly-formed words, play format):
 
-```
+```text
 To band this sen bing brird.
 I dist there and the of think earfuly.
 
@@ -324,3 +324,71 @@ Final measured gates (local production build, Apple Silicon):
   entries: **0.2 ms**; sustained generation: **26.7 chars/s**.
 - Lighthouse 13 desktop static preset: **performance 100, accessibility 100**, TBT 0 ms,
   LCP 0.77 s.
+
+## M9 — Guided learning, panel help, resizing, and accent personalization
+
+User-directed onboarding and workspace pass: make the next useful action obvious without a modal
+tour; explain every content panel; teach enough Lisp to make examples approachable; expose the
+existing resize behavior; and let the user choose a persistent feature color.
+
+Built:
+
+- An always-visible **Next** bar and a §0–§8 checklist with 28 observable tasks. Completion comes
+  from generation, controls, successful source application/copy, submitted REPL commands, and
+  inspector selections—not from time, scrolling, or merely opening a lesson. `learning-store`
+  persists stable task IDs in `lispllm.learning.v1`; model `(reset!)`, source restore, and shares do
+  not alter it. Diagnostics and dirty source deterministically override lesson guidance.
+- Explained **Try this** cards and §7 examples that stage text, open/focus the desktop or mobile
+  REPL, and wait for Enter. Model-mutating examples no longer execute from a single lesson click.
+  Every lesson also exposes the same compact calls/`define`/quoted-data/`let*`/comments primer.
+- A dependency-free `PanelInfoButton` for Learn/Files, both editor files, all five output tabs,
+  REPL/Problems, and the standalone mobile REPL. Hover/focus opens, click pins, pointer exit closes
+  an unpinned tip, and Escape restores trigger focus; portal positioning clamps to the viewport.
+- Visible 8 px desktop resize grips with pointer and keyboard input, drag cleanup, selection
+  suppression, pixel-valued ARIA, and double-click reset. Widths still persist, flush on page hide,
+  and are fitted against the current viewport while preserving a usable editor and absolute safety
+  bounds. Mobile remains an exclusive-pane layout with no meaningless separators.
+- A header accent picker with Amber, Cyan, Mint, Violet, Rose, and Lime presets plus a native custom
+  picker and Reset. `theme-store` persists only the raw value in `lispllm.theme.v1`, derives a
+  contrast-safe displayed accent and solid-fill foreground, and applies CSS variables before React
+  renders. Tailwind's existing `amber` token now aliases those variables, so navigation, controls,
+  CodeMirror, canvas selections, and the attention mask update without broad subscriptions. Error
+  red, inspect blue, semantic heatmaps, print, model state, and share state remain fixed.
+- `model.lisp` now has a beginner reading map and concise explanations of q/k/v, causal masking,
+  the residual stream, tied embeddings, temperature, and recursive generation. All executable text
+  remains the exact first 1,979 characters, so canonical spans and old knob offsets did not move;
+  the source grew from 55 executable lines to 102 total commented lines.
+
+Compatibility decisions:
+
+- The known pre-comment bundle fingerprint is `12ph0ts`; the commented bundle is `zx9kim`. Local
+  persistence restores only seed/history/knob state across that exact non-custom upgrade. It never
+  reapplies an old dirty or custom source, and the guard names both old and new fingerprints so a
+  future unrelated model cannot accidentally use this exception.
+- Compact shares now emit v3 and include the bundled fingerprint even without a custom-source patch.
+  v1/v2 decoding remains available; incompatible old custom patches are rejected. Exact-state JSON
+  also records v3. Learning and accent preferences are intentionally device-local and absent from
+  every share payload.
+
+Regression coverage added for learning metadata/idempotence/priority, contrast and malformed theme
+inputs, exact source migration, share v2/v3 behavior, panel fitting, staged desktop/mobile commands,
+§7 mutation staging, checklist persistence/completion, every panel-help context, preset/custom
+accent persistence/reset/share exclusion, pointer/keyboard resize persistence/clamping/reset, and
+the final §8 → Playground action.
+
+Final measured gates (local production build, Apple Silicon):
+
+- unit: **89 passed**; e2e: **40 passed, 10 intentional device-specific skips** across desktop
+  Chromium and the iPhone SE Chromium viewport.
+- JS bundle: **206.0 KB gz** excluding weights (≤ 350 KB).
+- untraced forward at ctx 96: **52.2 ms**; traced forward: **33.2 ms**; rebuild with two history
+  entries: **0.2 ms**; sustained generation: **24.4 chars/s**. All original model budgets pass.
+- identical 20-character editor benchmark: **46.2 ms**, with **zero long tasks** while §0 generation
+  remained active.
+- Lighthouse 13 desktop static preset: **performance 100, accessibility 100**, TBT 0 ms, LCP 0.8 s.
+  The additional simulated-mobile audit measured performance 84/accessibility 100; iPhone SE
+  functional, focus, viewport-overflow, and offline-after-load behavior are asserted separately.
+- Loaded-app offline navigation/editor check passed with zero non-origin requests.
+
+Scope remained local and dependency-free: no router, backend, account/progress sync, layout/color
+library, model weights change, or executable Lisp semantics change.

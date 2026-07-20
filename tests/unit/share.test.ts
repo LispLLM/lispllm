@@ -82,12 +82,41 @@ describe('share codec', () => {
     });
     expect(encoded.overflow).toBe(true);
     expect(encoded.hash).toBe('');
-    expect(encoded.serialized).toContain('"v":2');
+    expect(encoded.serialized).toContain('"v":3');
     const exported = JSON.parse(encoded.serialized) as {
       source: string;
       replHistory: string[];
     };
     expect(exported.source).toContain('x'.repeat(5_000));
     expect(exported.replHistory).toEqual(['(display 1)']);
+  });
+
+  it('keeps decoding legacy v2 links', () => {
+    const payload = JSON.stringify({
+      v: 2,
+      seed: 19,
+      k: [],
+      h: ['(help)'],
+      l: 3,
+      r: 'trace',
+    });
+    const hash = `#s=${btoa(payload).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+    expect(decodeShare(hash)).toEqual({
+      seed: 19,
+      knobEdits: [],
+      replHistory: ['(help)'],
+      lesson: 3,
+      rightTab: 'trace',
+    });
+  });
+
+  it('rejects v3 bundled state when the model fingerprint differs', () => {
+    const encoded = encodeShare({
+      seed: 19,
+      knobEdits: [],
+      replHistory: [],
+      bundledSource: '(define bundled-version 3)',
+    });
+    expect(decodeShare(encoded.hash, '(define bundled-version 4)')).toBeNull();
   });
 });

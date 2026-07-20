@@ -4,6 +4,7 @@ import { Closure, LispRecord, isBuiltin, isTensor } from '../lisp/types';
 import { printValue } from '../lisp/printer';
 import { getImage, setReplDraft, useAppState } from '../store/app-store';
 import { setBottomTab } from '../store/workspace-store';
+import { recordLearningEvent } from '../store/learning-store';
 
 function kindOf(value: Value): string {
   if (isTensor(value)) return `tensor [${value.shape.join(' ')}]`;
@@ -82,6 +83,7 @@ export default function EnvironmentBrowser() {
             onClick={() => {
               setReplDraft(binding.name);
               setBottomTab('repl');
+              recordLearningEvent('environment:binding-selected');
             }}
             title="Insert this symbol into the REPL"
           >

@@ -12,6 +12,7 @@ import { lastRow, sample as sampleK } from '../tensor/kernels';
 import { list } from '../lisp/types';
 import { applyKnobEdit, getImage, removeKnobEdit, useAppState } from '../store/app-store';
 import { shallowEqual } from '../store/selector';
+import { recordLearningEvent } from '../store/learning-store';
 
 const TEMPS = [0.2, 0.8, 1.5];
 const SAMPLE_LEN = 48;
@@ -103,6 +104,7 @@ export default function S5Temperature({
   const setTemp = (t: number) => {
     if (tempSpan == null) return;
     applyKnobEdit({ at: tempSpan, text: t.toFixed(2).replace(/0$/, '') });
+    recordLearningEvent('temperature:changed');
   };
 
   const toggleTopK = () => {
@@ -112,6 +114,7 @@ export default function S5Temperature({
       const orig = img.canonicalSource.slice(scaleExpr.span.start, scaleExpr.span.end);
       applyKnobEdit({ at: scaleExpr.span.start, text: `(top-k 40 ${orig})` });
     }
+    recordLearningEvent('temperature:topk-toggled');
   };
 
   return (
