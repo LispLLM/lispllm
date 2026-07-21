@@ -57,7 +57,9 @@ test('12. editor Run and Cmd/Ctrl+Enter atomically update the live model', async
     page,
     source.replace('(define temperature 0.8)', '(define temperature 1.4)'),
   );
-  await page.getByRole('textbox', { name: 'model.lisp source editor' }).press('Meta+Enter');
+  await page
+    .getByRole('textbox', { name: 'model.lisp source editor' })
+    .press('ControlOrMeta+Enter');
   await expect(page.getByTestId('editor-dirty')).not.toBeVisible();
   await openLesson(page, 5);
   await expect(page.getByTestId('s5-temp-value')).toHaveText('1.40');
