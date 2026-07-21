@@ -185,6 +185,7 @@ export default function Repl({ embedded = false }: { embedded?: boolean }) {
           <button
             className="text-dim hover:text-amber"
             aria-label={replOpen ? 'collapse repl' : 'expand repl'}
+            title={replOpen ? 'Collapse REPL history' : 'Expand REPL history'}
             onClick={() => setReplOpen(!replOpen)}
           >
             {replOpen ? '▾' : '▴'}

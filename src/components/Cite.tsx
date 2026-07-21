@@ -8,6 +8,7 @@ export default function Cite({ n }: { n: number }) {
       data-testid={`cite-${n}`}
       className="rounded-sm px-0.5 text-amber hover:bg-amber/5"
       aria-label={`open reference ${n}`}
+      title={`Open reference ${n}`}
       onClick={() => {
         setRefsOpen(true, n);
         setRightTab('references');

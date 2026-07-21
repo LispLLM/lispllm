@@ -12,12 +12,14 @@ export default function BottomPanel() {
       <div className="flex min-h-8 items-center border-b border-edge bg-chrome text-[11px] uppercase tracking-wider">
         <button
           className={`h-8 border-r border-edge px-3 ${bottomTab === 'repl' ? 'text-paper' : 'text-dim'}`}
+          title="Show the live Lisp REPL"
           onClick={() => setBottomTab('repl')}
         >
           REPL
         </button>
         <button
           className={`h-8 border-r border-edge px-3 ${bottomTab === 'problems' ? 'text-paper' : 'text-dim'}`}
+          title="Show source diagnostics"
           onClick={() => setBottomTab('problems')}
         >
           Problems{' '}
@@ -30,6 +32,7 @@ export default function BottomPanel() {
         <button
           className="h-8 px-3 text-dim hover:text-paper"
           aria-label="close bottom panel"
+          title="Close bottom panel"
           onClick={() => setBottomOpen(false)}
         >
           ×

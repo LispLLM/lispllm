@@ -22,6 +22,7 @@ export default function S2Embeddings({
   const img = getImage();
   const charset = img.checkpoint.manifest.charset;
   const [selected, setSelected] = useState(charset.indexOf('e'));
+  const [selectedFeature, setSelectedFeature] = useState(0);
   const [helpFor, setHelpFor] = useState<string | null>(null);
 
   const tokEmb = useMemo(() => {
@@ -33,6 +34,11 @@ export default function S2Embeddings({
   const neighbors = useMemo(
     () => (tokEmb && selected >= 0 ? nearestRows(tokEmb as Tensor, selected, 5) : []),
     [tokEmb, selected],
+  );
+  const rowLabels = useMemo(() => [...charset].map((ch) => `'${glyph(ch)}'`), [charset]);
+  const featureLabels = useMemo(
+    () => Array.from({ length: tokEmb?.shape[1] ?? 0 }, (_, index) => `feature ${index}`),
+    [tokEmb],
   );
 
   return (
@@ -75,6 +81,7 @@ export default function S2Embeddings({
             onClick={() => {
               if (i !== selected) recordLearningEvent('embeddings:character-selected');
               setSelected(i);
+              setSelectedFeature(0);
             }}
           >
             {glyph(ch)}
@@ -83,18 +90,31 @@ export default function S2Embeddings({
       </div>
 
       {tokEmb && (
-        <div className="mb-4 overflow-x-auto">
-          <TensorView
-            tensor={tokEmb}
-            maxWidth={620}
-            highlight={selected >= 0 ? [selected, 0] : null}
-            ariaLabel="token embedding matrix"
-          />
+        <div className="mb-4">
+          <p className="mb-2 text-xs leading-5 text-dim" data-testid="s2-heatmap-help">
+            Each row is one character; each column is a learned feature. Click a cell to choose its
+            character row and feature—the selected value and nearest characters update below.
+          </p>
+          <div className="overflow-x-auto">
+            <TensorView
+              tensor={tokEmb}
+              maxWidth={620}
+              selectedCell={selected >= 0 ? [selected, selectedFeature] : null}
+              rowLabels={rowLabels}
+              colLabels={featureLabels}
+              onSelect={(row, column) => {
+                if (row !== selected) recordLearningEvent('embeddings:character-selected');
+                setSelected(row);
+                setSelectedFeature(column);
+              }}
+              ariaLabel="token embedding matrix"
+            />
+          </div>
         </div>
       )}
 
       {selected >= 0 && (
-        <div className="mb-4 text-sm" data-testid="s2-neighbors">
+        <div className="mb-4 text-sm" data-testid="s2-neighbors" aria-live="polite">
           <span className="text-dim">nearest to </span>
           <span className="text-amber">'{glyph(charset[selected])}'</span>
           <span className="text-dim">: </span>
@@ -104,6 +124,7 @@ export default function S2Embeddings({
               className="mr-3 rounded px-1 text-paper hover:bg-paper/5 hover:text-amber"
               onClick={() => {
                 setSelected(row);
+                setSelectedFeature(0);
                 recordLearningEvent('embeddings:neighbor-selected');
               }}
             >

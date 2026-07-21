@@ -33,6 +33,8 @@ describe('learning guidance', () => {
   });
 
   it('matches normalized lesson and playground REPL commands', () => {
+    recordReplCommand("  (generate   '(51 48 46 38 48 27 1)   40)  ");
+    expect(getLearningState().completed).toContain('0.repl');
     recordReplCommand('  (shape   tok-emb)  ');
     expect(getLearningState().completed).toContain('2.repl');
     recordReplCommand('(set! temperature 3.0)');

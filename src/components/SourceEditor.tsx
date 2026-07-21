@@ -436,18 +436,21 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
           <button
             className="rounded px-2 py-1 text-dim hover:bg-paper/5 hover:text-paper disabled:opacity-40"
             disabled={!sourceDirty}
+            title="Discard the unrun draft and return to the running source"
             onClick={revertSourceDraft}
           >
             revert
           </button>
           <button
             className="rounded px-2 py-1 text-dim hover:bg-paper/5 hover:text-paper max-sm:hidden"
+            title="Replace the draft with the original bundled model"
             onClick={restoreBundledSourceDraft}
           >
             original
           </button>
           <button
             className="rounded px-2 py-1 text-dim hover:bg-paper/5 hover:text-paper max-sm:hidden"
+            title="Copy the current model.lisp draft"
             onClick={async () => {
               await navigator.clipboard.writeText(getState().sourceText);
               setToast('model.lisp copied to clipboard');
@@ -457,6 +460,7 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
           </button>
           <button
             className="rounded px-2 py-1 text-dim hover:bg-paper/5 hover:text-paper max-sm:hidden"
+            title="Download the current model.lisp draft"
             onClick={() => downloadText('model.lisp', getState().sourceText)}
           >
             download
@@ -487,6 +491,7 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
           <button
             data-testid="editor-diagnostics"
             className="text-error"
+            title="Open source problems"
             onClick={() => setBottomTab('problems')}
           >
             × {sourceDiagnostics.length} problem{sourceDiagnostics.length === 1 ? '' : 's'}

@@ -28,6 +28,9 @@ pnpm i && pnpm dev
   examples use the same deliberate flow, including mutations.
 - **Lesson output** opens the selected lesson's live experiment. The small info control in each
   content-panel header explains that panel and its primary interaction; hover, focus, or click it.
+- Lesson code cards are labeled as excerpts from the running `model.lisp`, not text editors. Their
+  underlined values are linked controls; **Edit source** opens the complete editable file. Tensor
+  heatmaps keep the clicked cell selected and identify its row, feature, and live value below.
 - **Editor** opens `model.lisp`. Edits are drafts until **Run** or Cmd/Ctrl+Enter succeeds.
   Parse, evaluation, replay, and the UI model contract are checked on an isolated candidate;
   a failure leaves the last good model running.
@@ -38,6 +41,8 @@ pnpm i && pnpm dev
 - Desktop separators are visible resize grips: drag them, use arrow keys while focused, or
   double-click to restore the default size. Saved widths are fitted to the viewport so the editor
   remains usable; mobile continues to use exclusive panes.
+- Compact activity-rail icons expose immediate labels on hover and keyboard focus. Other compact
+  navigation controls include descriptive tooltips while visible text links remain self-labeling.
 - The **Appearance** palette beside **REPL** offers explicit Dark and Light modes, six feature-color
   presets, and a custom color. Changes apply immediately; each mode derives contrast-safe applied
   and foreground colors, adapts the editor and visualizations, and is remembered only on this

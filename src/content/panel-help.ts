@@ -35,7 +35,7 @@ export const PANEL_HELP: Record<PanelHelpId, { title: string; description: strin
   lesson: {
     title: 'Lesson output',
     description:
-      'This panel is the live experiment for the selected lesson. Its controls, tensors, code excerpts, and generated text all come from the same Lisp image shown in the editor.',
+      'This panel is the live experiment for the selected lesson. The labeled model.lisp excerpt mirrors running source but is not a text editor: hover or click expressions to inspect them, drag an underlined value when offered, or choose Edit source to type normally.',
   },
   trace: {
     title: 'Trace',

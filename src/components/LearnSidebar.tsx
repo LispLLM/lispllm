@@ -22,6 +22,7 @@ function LessonList() {
               ? 'bg-paper/5 text-paper'
               : 'text-dim hover:bg-paper/5 hover:text-paper'
           }`}
+          title={`Open lesson ${lesson.id}: ${lesson.shortTitle}`}
           onClick={() => setActiveLesson(lesson.id)}
         >
           <span className={activeLesson === lesson.id ? 'text-amber' : 'text-dim'}>
@@ -41,6 +42,7 @@ function FilesView() {
       <button
         data-testid="file-model"
         className="flex min-h-8 w-full items-center gap-2 px-5 text-left text-paper hover:bg-paper/5"
+        title="Open editable model.lisp source"
         onClick={() => setEditorFile('model')}
       >
         <span className="text-amber">λ</span> model.lisp
@@ -48,6 +50,7 @@ function FilesView() {
       <button
         data-testid="file-kernels"
         className="flex min-h-8 w-full items-center gap-2 px-5 text-left text-paper hover:bg-paper/5"
+        title="Open read-only pure-Lisp kernel references"
         onClick={() => setEditorFile('kernels')}
       >
         <span className="text-trace">λ</span> kernels-ref.lisp
@@ -88,6 +91,7 @@ export default function LearnSidebar() {
             <button
               className="border-r border-edge px-3 py-2 text-left text-dim hover:bg-paper/5 hover:text-paper disabled:opacity-30"
               disabled={activeLesson === 0}
+              title="Open previous lesson"
               onClick={() => setActiveLesson(activeLesson - 1)}
             >
               ← Previous
@@ -95,6 +99,7 @@ export default function LearnSidebar() {
             <button
               className="px-3 py-2 text-right text-dim hover:bg-paper/5 hover:text-paper disabled:opacity-30"
               disabled={activeLesson === LESSONS.length - 1}
+              title="Open next lesson"
               onClick={() => setActiveLesson(activeLesson + 1)}
             >
               Next →
@@ -106,6 +111,7 @@ export default function LearnSidebar() {
       )}
       <button
         className="hidden border-t border-edge px-3 py-2 text-left text-xs text-dim max-md:block"
+        title="Open the source editor"
         onClick={() => setMobilePane('editor')}
       >
         open editor →

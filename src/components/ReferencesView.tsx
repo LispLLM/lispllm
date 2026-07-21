@@ -69,6 +69,7 @@ export default function ReferencesView() {
                   <button
                     key={lesson}
                     className="text-amber hover:underline"
+                    title={`Open lesson ${lesson}`}
                     onClick={() => setActiveLesson(lesson)}
                   >
                     §{lesson}

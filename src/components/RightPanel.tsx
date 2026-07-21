@@ -35,6 +35,7 @@ export default function RightPanel() {
               key={id}
               role="tab"
               aria-selected={rightTab === id}
+              title={`Show ${label} view`}
               className={`h-9 shrink-0 border-r border-edge px-3 text-[11px] ${
                 rightTab === id
                   ? 'border-t-2 border-t-amber bg-panel text-paper'
@@ -50,6 +51,7 @@ export default function RightPanel() {
         <button
           className="h-9 shrink-0 px-3 text-dim hover:text-paper"
           aria-label="close output panel"
+          title="Close output panel"
           onClick={() => setRightOpen(false)}
         >
           ×

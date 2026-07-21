@@ -1,6 +1,6 @@
 /**
- * Header (§10): sticky slim bar. Logotype with blinking block cursor, live
- * status chip computed from the manifest, REPL / References / GitHub buttons.
+ * Header (§10): sticky slim bar. Logotype, live status chip computed from the
+ * manifest, and REPL / References / GitHub navigation.
  */
 import {
   getImage,
@@ -52,6 +52,7 @@ export default function Header() {
       <button
         className="mr-1 hidden h-7 w-7 items-center justify-center text-dim hover:bg-paper/5 hover:text-paper md:flex"
         aria-label="toggle sidebar"
+        title="Toggle Learn and Files sidebar"
         onClick={() => setLeftOpen(!leftOpen)}
       >
         ◫
@@ -59,6 +60,7 @@ export default function Header() {
       <a
         href="#sec-0"
         className="flex items-center gap-2 whitespace-nowrap text-paper"
+        title="Go to Start here"
         onClick={(event) => {
           event.preventDefault();
           setActiveLesson(0);
@@ -66,10 +68,7 @@ export default function Header() {
         }}
       >
         <img src="/logo-48.png" alt="" width={18} height={18} className="rounded-sm" />
-        <span>
-          (lispllm)
-          <span className="cursor-blink text-amber">▍</span>
-        </span>
+        <span>(lispllm)</span>
       </a>
       {manifest && (
         <span
@@ -102,6 +101,7 @@ export default function Header() {
           setRefsOpen(!refsOpen);
           setRightTab('references');
         }}
+        title="Open References"
       >
         references
       </button>
@@ -143,6 +143,7 @@ export default function Header() {
         href="https://github.com/lispllm/lispllm"
         target="_blank"
         rel="noreferrer"
+        title="Open the lispllm repository on GitHub"
       >
         github
       </a>

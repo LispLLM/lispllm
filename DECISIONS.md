@@ -431,3 +431,42 @@ Final measured gates (local production build, Apple Silicon):
 - untraced forward at ctx 96: **49.9 ms**; traced forward: **32.0 ms**; rebuild with two history
   entries: **0.2 ms**; sustained generation: **25.2 chars/s**. Theme work remains outside model
   execution, and every original performance budget passes.
+
+## M11 — Interaction clarity follow-up
+
+User-reported learning and navigation fixes: make the first generation exercise executable, make
+read-only code cards honest about what they are, give embedding-matrix clicks persistent meaning,
+label compact navigation immediately, and remove the cursor that made the product mark look like an
+active text field.
+
+Built:
+
+- Lesson 0 now stages `(generate '(51 48 46 38 48 27 1) 40)`, whose literal token IDs decode to
+  the seven-character prompt “ROMEO: ”. The previous bare `prompt` symbol was never bound in the
+  command still follows the deliberate stage-then-Enter flow and completes the same stable task ID.
+- Every lesson code card identifies itself as a running `model.lisp` excerpt and says whether it is
+  read-only or contains a linked draggable value. A short interaction guide explains hover, click,
+  and drag behavior; **Edit source** routes to the full CodeMirror editor.
+- `TensorView` now supports controlled or internal persistent cell selection. §2 binds selection to
+  both the character row and learned-feature column, keeps the selected value labeled after pointer
+  exit, updates nearest-character results, and exposes the change through a polite live region.
+- All seven activity-rail destinations have immediate themed hover/focus labels; compact header,
+  output-tab, file, lesson, citation, and status navigation retain or gained descriptive titles.
+  The `(lispllm)` header and loading marks are static, while the generated-text cursor remains an
+  intentional generation affordance.
+
+Regression coverage executes the corrected generation form in the real browser REPL, checks task
+completion and absence of the old unbound-symbol error, opens the editor from a code-card guide,
+clicks a deterministic embedding cell and checks its character/feature/value/neighbor feedback,
+tests every desktop activity tooltip, and asserts that the application banner contains no blinking
+cursor.
+
+Final measured gates (local production build, Apple Silicon):
+
+- lint, formatting, strict TypeScript, and production build passed; unit: **89 passed**; e2e:
+  **47 passed, 11 intentional device-specific skips** across desktop Chromium and the iPhone SE
+  Chromium viewport.
+- JS bundle: **207.6 KB gz** excluding weights (≤ 350 KB).
+- untraced forward at ctx 96: **47.4 ms**; traced forward: **31.0 ms**; rebuild with two history
+  entries: **0.2 ms**; sustained generation: **27.0 chars/s**. No model source, checkpoint, or
+  executable Lisp semantics changed.

@@ -1,6 +1,6 @@
 /**
  * §0 Hero — "A language model in one page of Lisp."
- * (generate prompt 400) streams beside its own source. Play/pause/step +
+ * The tokenized `ROMEO: ` prompt streams beside its own source. Play/pause/step +
  * cosmetic speed slider. Pause reveals live top-10 next-char ProbBars.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';

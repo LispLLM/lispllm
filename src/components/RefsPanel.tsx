@@ -52,6 +52,7 @@ export default function RefsPanel() {
           <button
             className="text-dim hover:text-amber"
             aria-label="close references"
+            title="Close references"
             onClick={() => {
               setRefsOpen(false);
               if (openerRef.current instanceof HTMLElement) openerRef.current.focus();

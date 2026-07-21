@@ -11,6 +11,7 @@ import { isBuiltin, isTensor } from '../lisp/types';
 import { printValue } from '../lisp/printer';
 import { appendTranscript, getImage, useAppState } from '../store/app-store';
 import { shallowEqual } from '../store/selector';
+import { setEditorFile, setMobilePane } from '../store/workspace-store';
 
 const SPECIALS = new Set([
   'define',
@@ -73,6 +74,7 @@ function CodePanel({
     shallowEqual,
   );
   const [status, setStatus] = useState<string | null>(null);
+  const hasEditableLiteral = (editable?.length ?? 0) > 0;
 
   const img = getImage();
   const program = img.program;
@@ -220,6 +222,7 @@ function CodePanel({
                 <button
                   className="ml-0.5 align-super text-[9px] text-dim hover:text-amber"
                   aria-label={`reference implementation of ${node.name}`}
+                  title={`Open the pure-Lisp reference for ${node.name}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     onPrimitiveHelp(node.name);
@@ -252,7 +255,36 @@ function CodePanel({
       data-testid={testId}
       className="min-w-0 max-w-full rounded border border-edge bg-panel p-4"
     >
+      <div
+        className="mb-3 border-b border-edge pb-2 text-[11px]"
+        data-testid={testId ? `${testId}-guide` : undefined}
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="font-semibold uppercase tracking-wider text-paper">
+            Running model.lisp excerpt
+          </span>
+          <span className="text-dim">
+            {hasEditableLiteral ? 'linked control · not a text editor' : 'read-only view'}
+          </span>
+          <button
+            type="button"
+            className="ml-auto shrink-0 text-amber underline hover:text-paper"
+            title="Open the editable model.lisp source"
+            onClick={() => {
+              setEditorFile('model');
+              setMobilePane('editor');
+            }}
+          >
+            Edit source →
+          </button>
+        </div>
+        <p className="mt-1 leading-4 text-dim">
+          {hasEditableLiteral && 'Drag the underlined value. '}
+          Hover an expression to preview its value; click one to inspect it in the REPL.
+        </p>
+      </div>
       <pre
+        aria-label="Running model.lisp source excerpt"
         className={`overflow-x-auto whitespace-pre font-mono ${dense ? 'text-xs leading-5' : 'text-sm leading-6'}`}
         onMouseLeave={() => hoverNode(null)}
       >

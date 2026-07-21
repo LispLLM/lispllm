@@ -116,14 +116,15 @@ export const LEARNING_GUIDES: LearningGuide[] = [
         id: '0.repl',
         title: 'Generate directly from Lisp',
         description: 'Stage the generation command, then press Enter in the REPL.',
-        event: replEvent('(generate prompt 40)'),
-        target: { pane: 'repl', draft: '(generate prompt 40)' },
+        event: replEvent("(generate '(51 48 46 38 48 27 1) 40)"),
+        target: { pane: 'repl', draft: "(generate '(51 48 46 38 48 27 1) 40)" },
       },
     ],
     tryIt: {
-      command: '(generate prompt 40)',
-      explanation: 'Call the Lisp generator directly with the bundled prompt and request 40 steps.',
-      expected: 'A list containing the starting prompt tokens plus 40 sampled token IDs.',
+      command: "(generate '(51 48 46 38 48 27 1) 40)",
+      explanation:
+        'Call the Lisp generator with the token IDs for “ROMEO: ” and request 40 more characters.',
+      expected: 'The seven prompt IDs followed by 40 newly sampled token IDs.',
     },
   },
   {

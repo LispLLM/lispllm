@@ -6,6 +6,7 @@ import {
   useWorkspaceState,
 } from '../store/workspace-store';
 import { shallowEqual } from '../store/selector';
+import NavigationTooltip from './NavigationTooltip';
 
 const items = [
   { id: 'learn', label: 'Learn', glyph: '◫' },
@@ -39,12 +40,11 @@ export default function ActivityRail() {
         return (
           <button
             key={item.id}
-            className={`relative flex h-12 w-12 shrink-0 items-center justify-center text-lg hover:bg-paper/5 hover:text-paper max-md:h-10 max-md:flex-1 ${
+            className={`group relative flex h-12 w-12 shrink-0 items-center justify-center text-lg hover:bg-paper/5 hover:text-paper max-md:h-10 max-md:flex-1 ${
               active ? 'bg-paper/5 text-paper' : 'text-dim'
             }`}
             data-testid={`activity-${item.id}`}
             aria-label={item.label}
-            title={item.label}
             onClick={() => {
               if (item.id === 'learn' || item.id === 'files') {
                 setLeftView(item.id);
@@ -60,19 +60,20 @@ export default function ActivityRail() {
               <span className="absolute inset-y-0 left-0 w-0.5 bg-amber max-md:inset-x-0 max-md:bottom-0 max-md:top-auto max-md:h-0.5 max-md:w-auto" />
             )}
             <span aria-hidden="true">{item.glyph}</span>
+            <NavigationTooltip label={item.label} testId={`activity-tooltip-${item.id}`} />
           </button>
         );
       })}
       <button
-        className={`mt-auto flex h-12 w-12 items-center justify-center text-lg hover:bg-paper/5 hover:text-paper max-md:mt-0 max-md:h-10 max-md:flex-1 ${
+        className={`group relative mt-auto flex h-12 w-12 items-center justify-center text-lg hover:bg-paper/5 hover:text-paper max-md:mt-0 max-md:h-10 max-md:flex-1 ${
           mobilePane === 'editor' ? 'text-paper' : 'text-dim'
         }`}
         aria-label="Editor"
         data-testid="activity-editor"
-        title="Editor"
         onClick={() => setMobilePane('editor')}
       >
         <span aria-hidden="true">{'<>'}</span>
+        <NavigationTooltip label="Editor" testId="activity-tooltip-editor" />
       </button>
     </nav>
   );

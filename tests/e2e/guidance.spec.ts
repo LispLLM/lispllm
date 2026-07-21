@@ -55,6 +55,21 @@ test('19. Next action drives an observable checklist that persists', async ({ pa
 
 test('20. Try this stages and explains a command without auto-running it', async ({ page }) => {
   await boot(page);
+  await openLearnLesson(page, 0);
+  await page.getByTestId('try-this-stage-0').click();
+  const generateInput = page.locator('[data-testid="repl-input"]:visible');
+  const generateHistory = page.locator('[data-testid="repl-history"]:visible');
+  await expect(generateInput).toHaveValue("(generate '(51 48 46 38 48 27 1) 40)");
+  await expect(generateInput).toBeFocused();
+  await expect(generateHistory).not.toContainText("(generate '(51 48 46 38 48 27 1) 40)");
+  await generateInput.press('Enter');
+  await expect(generateHistory).toContainText("(generate '(51 48 46 38 48 27 1) 40)", {
+    timeout: 10_000,
+  });
+  await expect(generateHistory).not.toContainText('unbound symbol: prompt');
+  await openLearnLesson(page, 0);
+  await expect(page.getByTestId('learning-task-0.repl')).toHaveAttribute('data-state', 'complete');
+
   await openLearnLesson(page, 1);
   await expect(page.getByTestId('try-this-1')).toContainText('Expected:');
   await page.getByTestId('try-this-stage-1').click();
@@ -305,9 +320,12 @@ test('24. visible resize grips drag, persist, and double-click reset', async ({
   await expect(restored).toHaveAttribute('aria-valuenow', '340');
 
   await page.setViewportSize({ width: 900, height: 720 });
-  const editorBox = await page.getByRole('region', { name: 'source editor' }).boundingBox();
-  expect(editorBox).not.toBeNull();
-  expect(editorBox!.width).toBeGreaterThanOrEqual(290);
+  await expect
+    .poll(async () => {
+      const box = await page.getByRole('region', { name: 'source editor' }).boundingBox();
+      return box?.width ?? 0;
+    })
+    .toBeGreaterThanOrEqual(290);
   await page.setViewportSize({ width: 1280, height: 720 });
   await expect(page.getByRole('separator', { name: 'resize learn sidebar' })).toHaveAttribute(
     'aria-valuenow',
@@ -355,7 +373,78 @@ test('25. every desktop content-panel header exposes contextual help', async ({
   await expectHelp('problems', 'model-contract diagnostics');
 });
 
-test('25. the final lesson action continues into the Playground', async ({ page }) => {
+test('26. lesson code excerpts explain their purpose and open the editable source', async ({
+  page,
+}) => {
+  await boot(page);
+  await openLearnLesson(page, 5);
+  await page.getByTestId('activity-lesson').click();
+
+  const guide = page.getByTestId('s5-code-guide');
+  await expect(guide).toContainText('Running model.lisp excerpt');
+  await expect(guide).toContainText('not a text editor');
+  await expect(guide).toContainText('Drag the underlined value');
+  await guide.getByRole('button', { name: 'Edit source' }).click();
+  await expect(page.getByTestId('source-editor')).toBeVisible();
+});
+
+test('27. embedding heatmap clicks select a character, feature, value, and neighbors', async ({
+  page,
+}) => {
+  await boot(page);
+  await openLearnLesson(page, 2);
+  await page.getByTestId('activity-lesson').click();
+  await expect(page.getByTestId('s2-heatmap-help')).toContainText(
+    'Each row is one character; each column is a learned feature',
+  );
+
+  const heatmap = page.getByRole('img', { name: 'token embedding matrix' });
+  const box = await heatmap.boundingBox();
+  expect(box).not.toBeNull();
+  await heatmap.click({
+    position: {
+      x: (box!.width * 12.5) / 96,
+      y: (box!.height * 2.5) / 96,
+    },
+  });
+  await page.mouse.move(0, 0);
+
+  await expect(page.getByRole('option', { name: '!', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.getByTestId('tensor-tooltip')).toContainText("selected ['!', feature 12] =");
+  await expect(page.getByTestId('s2-neighbors')).toContainText("nearest to '!'");
+});
+
+test('28. every activity icon has an immediate tooltip and the logo stays still', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'desktop vertical navigation');
+  await boot(page);
+
+  for (const [id, label] of [
+    ['learn', 'Learn'],
+    ['files', 'Files'],
+    ['lesson', 'Lesson output'],
+    ['trace', 'Trace'],
+    ['environment', 'Environment'],
+    ['references', 'References'],
+    ['editor', 'Editor'],
+  ] as const) {
+    await page.getByTestId(`activity-${id}`).hover();
+    await expect(page.getByTestId(`activity-tooltip-${id}`)).toBeVisible();
+    await expect(page.getByTestId(`activity-tooltip-${id}`)).toHaveText(label);
+  }
+
+  const banner = page.getByRole('banner');
+  await expect(banner).toContainText('(lispllm)');
+  await expect(banner).not.toContainText('▍');
+  await expect(banner.locator('.cursor-blink')).toHaveCount(0);
+});
+
+test('29. the final lesson action continues into the Playground', async ({ page }) => {
   await boot(page);
   await page.evaluate(() => {
     localStorage.setItem(

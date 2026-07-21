@@ -51,7 +51,12 @@ export default function KernelRef({ name, onClose }: { name: string; onClose: ()
       >
         <div className="mb-2 flex justify-between text-dim">
           <span>;; {name} is a native kernel; this pure-Lisp version is equivalent (tested)</span>
-          <button className="text-dim hover:text-amber" aria-label="close" onClick={onClose}>
+          <button
+            className="text-dim hover:text-amber"
+            aria-label="close"
+            title="Close kernel reference"
+            onClick={onClose}
+          >
             esc ×
           </button>
         </div>

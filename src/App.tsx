@@ -135,7 +135,7 @@ export default function App() {
       <main className="flex h-dvh flex-col bg-ink font-mono" data-testid="loading">
         <div className="flex h-9 items-center border-b border-edge bg-chrome px-3 text-xs text-paper">
           <img src="/logo-48.png" alt="" className="mr-2 h-[18px] w-[18px] rounded-sm" />
-          (lispllm)<span className="cursor-blink text-amber">▍</span>
+          (lispllm)
         </div>
         <div className="flex flex-1 items-center justify-center p-8">
           <div className="w-full max-w-md">
@@ -178,6 +178,7 @@ export default function App() {
           <span>{toast}</span>
           <button
             className="text-amber underline"
+            title="Reset the running model to bundled defaults"
             onClick={() => {
               resetImage();
               setToast(null);
@@ -185,7 +186,12 @@ export default function App() {
           >
             (reset!)
           </button>
-          <button className="text-dim" aria-label="dismiss" onClick={() => setToast(null)}>
+          <button
+            className="text-dim"
+            aria-label="dismiss"
+            title="Dismiss message"
+            onClick={() => setToast(null)}
+          >
             ×
           </button>
         </div>

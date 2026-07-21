@@ -15,6 +15,8 @@ export interface TensorViewProps {
   maxWidth?: number;
   onSelect?: (i: number, j: number, value: number) => void;
   onHover?: (i: number, j: number) => void;
+  /** controlled selected cell; omit to let TensorView retain its own selection */
+  selectedCell?: [number, number] | null;
   /** externally highlighted cell (bidirectional linking) */
   highlight?: [number, number] | null;
   rowLabels?: string[];
@@ -59,6 +61,7 @@ export default function TensorView({
   maxWidth = 560,
   onSelect,
   onHover,
+  selectedCell,
   highlight,
   rowLabels,
   colLabels,
@@ -66,7 +69,8 @@ export default function TensorView({
 }: TensorViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hover, setHover] = useState<[number, number] | null>(null);
-  const [selected, setSelected] = useState<[number, number] | null>(null);
+  const [internalSelected, setInternalSelected] = useState<[number, number] | null>(null);
+  const selected = selectedCell === undefined ? internalSelected : selectedCell;
   const accent = useThemeState((current) => current.accent);
   const mode = useThemeState((current) => current.mode);
 
@@ -132,7 +136,7 @@ export default function TensorView({
   );
 
   const activate = (cell: [number, number]) => {
-    setSelected(cell);
+    if (selectedCell === undefined) setInternalSelected(cell);
     onSelect?.(cell[0], cell[1], tensor.data[cell[0] * c + cell[1]]);
   };
 
@@ -154,10 +158,12 @@ export default function TensorView({
     }
   };
 
-  const tip = hover
+  const tipCell = hover ?? selected;
+  const tip = tipCell
     ? {
-        v: tensor.data[hover[0] * c + hover[1]],
-        label: `${rowLabels?.[hover[0]] ?? hover[0]}, ${colLabels?.[hover[1]] ?? hover[1]}`,
+        v: tensor.data[tipCell[0] * c + tipCell[1]],
+        label: `${rowLabels?.[tipCell[0]] ?? tipCell[0]}, ${colLabels?.[tipCell[1]] ?? tipCell[1]}`,
+        state: hover ? 'hover' : 'selected',
       }
     : null;
 
@@ -183,7 +189,7 @@ export default function TensorView({
         <span>min {printNumber(min)}</span>
         {tip && (
           <span className="text-paper" data-testid="tensor-tooltip">
-            [{tip.label}] = {printNumber(tip.v)}
+            {tip.state} [{tip.label}] = {printNumber(tip.v)}
           </span>
         )}
         <span>max {printNumber(max)}</span>
