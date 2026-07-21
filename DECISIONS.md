@@ -392,3 +392,42 @@ Final measured gates (local production build, Apple Silicon):
 
 Scope remained local and dependency-free: no router, backend, account/progress sync, layout/color
 library, model weights change, or executable Lisp semantics change.
+
+## M10 — Persistent light appearance
+
+User-directed appearance follow-up: add an explicit light mode without reducing the feature-color
+picker to code-editor decoration or weakening the dark workbench.
+
+Built:
+
+- **Appearance** now offers explicit Dark and Light radio options above the six feature-color
+  presets. Dark remains the default. The same `lispllm.theme.v1` record now writes schema v2 with
+  `{ mode, accent }`; schema-v1 accent records migrate to Dark, and malformed modes fail closed to
+  Dark. Appearance remains device-local and absent from share/model state.
+- The fixed workbench palette moved behind semantic CSS variables for canvas, content, muted text,
+  panel, divider, chrome, trace, error, and syntax roles. Light mode uses warm off-white surfaces,
+  dark readable type, 3:1 dividers, and mode-specific code colors; the browser `color-scheme` and
+  theme-color metadata update with the selection. Print remains intentionally black on white.
+- Feature colors are re-derived per mode against canvas, panel, and header chrome. Preset swatches
+  preview the applied color, custom input preserves the raw choice, and solid feature fills receive
+  a guaranteed contrasting mode surface. Accent-tinted text states use contrast-safe foregrounds
+  or sufficiently light tints.
+- CodeMirror reconfigures its light/dark base theme through a compartment while syntax, selection,
+  trace, diagnostics, gutters, tooltips, and search controls consume semantic variables. Canvas
+  tensor heatmaps redraw with light-specific neutral, negative, and positive ramps; selected cells
+  still use the persisted feature color.
+
+Regression coverage now checks both-mode accent derivation for every preset and black/white custom
+extremes, local mode persistence and v1 fallback, semantic workbench/chrome colors, browser metadata,
+feature-color propagation, CodeMirror surfaces, and live switching back to Dark on desktop and the
+iPhone SE viewport.
+
+Final measured gates (local production build, Apple Silicon):
+
+- lint, formatting, strict TypeScript, and production build passed; unit: **89 passed**; e2e:
+  **42 passed, 10 intentional device-specific skips** across desktop Chromium and the iPhone SE
+  Chromium viewport.
+- JS bundle: **206.5 KB gz** excluding weights (≤ 350 KB).
+- untraced forward at ctx 96: **49.9 ms**; traced forward: **32.0 ms**; rebuild with two history
+  entries: **0.2 ms**; sustained generation: **25.2 chars/s**. Theme work remains outside model
+  execution, and every original performance budget passes.

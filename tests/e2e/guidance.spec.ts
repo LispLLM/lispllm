@@ -151,6 +151,7 @@ test('22. preset and custom accents persist, stay share-local, and reset safely'
 
   await page.reload();
   await expect(page.getByTestId('btn-accent')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(
     await page.evaluate(() =>
       getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
@@ -189,10 +190,26 @@ test('22. preset and custom accents persist, stay share-local, and reset safely'
     .toBe('#e6a23c');
 
   await page.evaluate(() => {
-    localStorage.setItem('lispllm.theme.v1', JSON.stringify({ v: 1, accent: 'not-a-color' }));
+    localStorage.setItem('lispllm.theme.v1', JSON.stringify({ v: 1, accent: '#55c7d9' }));
   });
   await page.reload();
   await expect(page.getByTestId('btn-accent')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(
+    await page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+    ),
+  ).toBe('#55c7d9');
+
+  await page.evaluate(() => {
+    localStorage.setItem(
+      'lispllm.theme.v1',
+      JSON.stringify({ v: 2, accent: 'not-a-color', mode: 'sepia' }),
+    );
+  });
+  await page.reload();
+  await expect(page.getByTestId('btn-accent')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(
     await page.evaluate(() =>
       getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
@@ -200,7 +217,70 @@ test('22. preset and custom accents persist, stay share-local, and reset safely'
   ).toBe('#e6a23c');
 });
 
-test('23. visible resize grips drag, persist, and double-click reset', async ({
+test('23. light mode themes the workbench and editor, persists, and switches back', async ({
+  page,
+}) => {
+  await boot(page);
+  await page.getByTestId('btn-accent').click();
+  await page.getByTestId('theme-light').click();
+
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.getByTestId('theme-light')).toHaveAttribute('aria-checked', 'true');
+  const light = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    const read = (selector: string, property: 'backgroundColor' | 'color') => {
+      const element = document.querySelector(selector);
+      return element ? getComputedStyle(element)[property] : null;
+    };
+    return {
+      accentChannels: root.getPropertyValue('--accent-rgb').trim(),
+      foregroundChannels: root.getPropertyValue('--accent-foreground-rgb').trim(),
+      colorScheme: root.colorScheme,
+      body: getComputedStyle(document.body).backgroundColor,
+      chrome: read('header', 'backgroundColor'),
+      panel: read('[data-testid="accent-picker"]', 'backgroundColor'),
+      statusBackground: read('[data-testid="status-bar"]', 'backgroundColor'),
+      statusColor: read('[data-testid="status-bar"]', 'color'),
+      rail: read('[data-testid="activity-learn"] .bg-amber', 'backgroundColor'),
+      meta: document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
+      stored: JSON.parse(localStorage.getItem('lispllm.theme.v1') ?? '{}') as unknown,
+    };
+  });
+  const rgb = (channels: string) => `rgb(${channels.split(/\s+/).join(', ')})`;
+  expect(light).toMatchObject({
+    colorScheme: 'light',
+    body: 'rgb(248, 246, 242)',
+    chrome: 'rgb(238, 233, 225)',
+    panel: 'rgb(255, 253, 248)',
+    meta: '#eee9e1',
+    stored: { v: 2, mode: 'light', accent: '#e6a23c' },
+  });
+  expect(light.statusBackground).toBe(rgb(light.accentChannels));
+  expect(light.statusColor).toBe(rgb(light.foregroundChannels));
+  expect(light.rail).toBe(rgb(light.accentChannels));
+
+  await page.getByTestId('activity-editor').click();
+  const editor = page.getByTestId('source-editor');
+  await expect(editor).toBeVisible();
+  await expect(editor.locator('.cm-editor')).toHaveCSS('background-color', 'rgb(248, 246, 242)');
+  await expect(editor.locator('.cm-gutters')).toHaveCSS('background-color', 'rgb(255, 253, 248)');
+
+  await page.reload();
+  await expect(page.getByTestId('activity-learn')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.getByTestId('btn-accent').click();
+  await expect(page.getByTestId('theme-light')).toHaveAttribute('aria-checked', 'true');
+  await page.getByTestId('theme-dark').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(15, 14, 12)');
+  await page.getByTestId('activity-editor').click();
+  await expect(page.getByTestId('source-editor').locator('.cm-editor')).toHaveCSS(
+    'background-color',
+    'rgb(15, 14, 12)',
+  );
+});
+
+test('24. visible resize grips drag, persist, and double-click reset', async ({
   page,
   isMobile,
 }) => {
@@ -235,7 +315,7 @@ test('23. visible resize grips drag, persist, and double-click reset', async ({
   );
 });
 
-test('24. every desktop content-panel header exposes contextual help', async ({
+test('25. every desktop content-panel header exposes contextual help', async ({
   page,
   isMobile,
 }) => {

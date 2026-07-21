@@ -27,7 +27,7 @@ const SPECIALS = new Set([
   'else',
 ]);
 
-const PAREN_COLORS = ['text-[#8a857a]', 'text-[#a89a6a]', 'text-[#7a8a95]'];
+const PAREN_COLORS = ['text-code-paren-1', 'text-code-paren-2', 'text-code-paren-3'];
 
 export interface EditableLiteral {
   /** matches a literal node in the current program */
@@ -193,7 +193,7 @@ function CodePanel({
     let cls = 'text-paper';
     let helpBtn: React.ReactNode = null;
     if (node.kind === 'num') {
-      cls = 'text-[#d0a45c]';
+      cls = 'text-code-number-alt';
       const edit = editable?.find((e) => e.nodeId === node.id);
       if (edit) {
         return (
@@ -207,14 +207,14 @@ function CodePanel({
         );
       }
     } else if (node.kind === 'str') {
-      cls = 'text-[#9aa87a]';
+      cls = 'text-code-string-alt';
     } else if (node.kind === 'sym') {
-      if (SPECIALS.has(node.name)) cls = 'text-[#c8b287]';
+      if (SPECIALS.has(node.name)) cls = 'text-code-keyword';
       else if (headPos) {
         try {
           const v = img.lookup(node.name);
           if (isBuiltin(v)) {
-            cls = 'text-[#8fb0c0]';
+            cls = 'text-trace';
             if (onPrimitiveHelp) {
               helpBtn = (
                 <button
@@ -229,7 +229,7 @@ function CodePanel({
                 </button>
               );
             }
-          } else cls = 'text-[#c99a9a]';
+          } else cls = 'text-code-function';
         } catch {
           /* locally-bound */
         }
@@ -288,7 +288,7 @@ function DraggableLiteral({
     <span
       data-node-id={nodeId}
       data-testid="knob-literal"
-      className="cursor-ew-resize rounded-sm bg-amber/15 px-0.5 text-amber underline decoration-dotted"
+      className="cursor-ew-resize rounded-sm bg-amber/5 px-0.5 text-amber underline decoration-dotted"
       title="drag to change"
       onMouseDown={(e) => {
         e.preventDefault();

@@ -19,8 +19,8 @@ export default function KernelSourceView() {
   return (
     <section className="flex h-full min-h-0 flex-col bg-ink" data-testid="kernel-source">
       <div className="flex min-h-9 items-center border-b border-edge bg-panel text-xs">
-        <div className="flex h-9 items-center gap-2 border-r border-edge border-t-2 border-t-[#8fb0c0] bg-ink px-3 text-paper">
-          <span className="text-[#8fb0c0]">λ</span> kernels-ref.lisp
+        <div className="flex h-9 items-center gap-2 border-r border-edge border-t-2 border-t-trace bg-ink px-3 text-paper">
+          <span className="text-trace">λ</span> kernels-ref.lisp
           <span className="text-[10px] text-dim">read only</span>
           <PanelInfoButton panel="kernels" />
         </div>

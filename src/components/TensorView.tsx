@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Tensor } from '../lisp/types';
 import { printNumber } from '../lisp/printer';
 import { useThemeState } from '../store/theme-store';
+import type { ThemeMode } from '../store/theme-store';
 
 export interface TensorViewProps {
   tensor: Tensor;
@@ -21,20 +22,35 @@ export interface TensorViewProps {
   ariaLabel?: string;
 }
 
-// colorblind-safe-ish diverging: blue → near-white → amber
-function divergingColor(t: number): [number, number, number] {
-  // t in [-1, 1]
-  if (t < 0) {
-    const u = Math.min(1, -t);
-    return [Math.round(232 - 173 * u), Math.round(228 - 96 * u), Math.round(220 + 15 * u)];
-  }
-  const u = Math.min(1, t);
-  return [Math.round(232 - 2 * u), Math.round(228 - 66 * u), Math.round(220 - 160 * u)];
+function interpolate(
+  from: [number, number, number],
+  to: [number, number, number],
+  amount: number,
+): [number, number, number] {
+  return from.map((channel, index) => Math.round(channel + (to[index] - channel) * amount)) as [
+    number,
+    number,
+    number,
+  ];
 }
 
-function sequentialColor(t: number): [number, number, number] {
+// colorblind-safe-ish diverging: blue → neutral → amber
+function divergingColor(t: number, mode: ThemeMode): [number, number, number] {
+  const neutral: [number, number, number] = mode === 'dark' ? [232, 228, 220] : [224, 220, 212];
+  const negative: [number, number, number] = mode === 'dark' ? [59, 132, 235] : [44, 94, 156];
+  const positive: [number, number, number] = mode === 'dark' ? [230, 162, 60] : [150, 83, 10];
+  // t in [-1, 1]
+  if (t < 0) {
+    return interpolate(neutral, negative, Math.min(1, -t));
+  }
+  return interpolate(neutral, positive, Math.min(1, t));
+}
+
+function sequentialColor(t: number, mode: ThemeMode): [number, number, number] {
   const u = Math.max(0, Math.min(1, t));
-  return [Math.round(24 + 206 * u), Math.round(22 + 140 * u), Math.round(19 + 41 * u)];
+  return mode === 'dark'
+    ? interpolate([24, 22, 19], [230, 162, 60], u)
+    : interpolate([232, 227, 219], [150, 83, 10], u);
 }
 
 export default function TensorView({
@@ -52,6 +68,7 @@ export default function TensorView({
   const [hover, setHover] = useState<[number, number] | null>(null);
   const [selected, setSelected] = useState<[number, number] | null>(null);
   const accent = useThemeState((current) => current.accent);
+  const mode = useThemeState((current) => current.mode);
 
   const r = tensor.shape.length === 2 ? tensor.shape[0] : 1;
   const c = tensor.shape.length === 2 ? tensor.shape[1] : tensor.shape[0];
@@ -81,8 +98,8 @@ export default function TensorView({
       for (let j = 0; j < c; j++) {
         const v = tensor.data[i * c + j];
         const [red, g, b] = sequential
-          ? sequentialColor((v - min) / (max - min || 1))
-          : divergingColor(v / absMax);
+          ? sequentialColor((v - min) / (max - min || 1), mode)
+          : divergingColor(v / absMax, mode);
         ctx.fillStyle = `rgb(${red},${g},${b})`;
         ctx.fillRect(j * cs, i * cs, cs, cs);
       }
@@ -102,7 +119,7 @@ export default function TensorView({
       ctx.strokeRect(hover[1] * cs + 0.5, 0.5, cs - 1, r * cs - 1);
       ctx.globalAlpha = 1;
     }
-  }, [tensor, r, c, cs, min, max, sequential, hover, selected, highlight, accent]);
+  }, [tensor, r, c, cs, min, max, sequential, hover, selected, highlight, accent, mode]);
 
   const cellFromEvent = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>): [number, number] => {
@@ -153,7 +170,7 @@ export default function TensorView({
         tabIndex={0}
         onKeyDown={onKeyDown}
         style={{ width: c * cs, height: r * cs, imageRendering: 'pixelated' }}
-        className="cursor-crosshair rounded-sm outline-none focus:ring-1 focus:ring-amber"
+        className="cursor-crosshair rounded-sm border border-edge outline-none focus:ring-1 focus:ring-amber"
         onMouseMove={(e) => {
           const cell = cellFromEvent(e);
           setHover(cell);

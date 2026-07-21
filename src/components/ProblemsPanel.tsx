@@ -13,7 +13,7 @@ export default function ProblemsPanel() {
               key={`${diagnostic.from}.${index}`}
               className="flex gap-3 border-b border-edge px-4 py-2"
             >
-              <span className="text-red-400">×</span>
+              <span className="text-error">×</span>
               <div>
                 <div className="text-paper">{diagnostic.message}</div>
                 <div className="mt-0.5 text-dim">

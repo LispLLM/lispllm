@@ -69,7 +69,7 @@ export default function S2Embeddings({
             aria-selected={i === selected}
             className={`h-7 w-7 rounded border text-sm ${
               i === selected
-                ? 'border-amber bg-amber/20 text-amber'
+                ? 'border-amber bg-amber/20 text-paper'
                 : 'border-edge text-dim hover:text-paper'
             }`}
             onClick={() => {

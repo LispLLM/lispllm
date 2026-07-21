@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { EditorState, StateEffect, StateField } from '@codemirror/state';
+import { Compartment, EditorState, StateEffect, StateField } from '@codemirror/state';
 import type { Extension } from '@codemirror/state';
 import {
   Decoration,
@@ -43,6 +43,8 @@ import {
 import { setBottomTab, setSelectedNodeId, useWorkspaceState } from '../store/workspace-store';
 import { shallowEqual } from '../store/selector';
 import { recordLearningEvent } from '../store/learning-store';
+import { getThemeState, useThemeState } from '../store/theme-store';
+import type { ThemeMode } from '../store/theme-store';
 import PanelInfoButton from './PanelInfoButton';
 
 interface LispModeState {
@@ -114,12 +116,12 @@ const lispMode: StreamParser<LispModeState> = {
 const lispLanguage = StreamLanguage.define(lispMode);
 
 const lispHighlightStyle = HighlightStyle.define([
-  { tag: tags.comment, color: '#8a857a', fontStyle: 'italic' },
+  { tag: tags.comment, color: 'rgb(var(--dim-rgb))', fontStyle: 'italic' },
   { tag: [tags.keyword, tags.operator], color: 'var(--accent)' },
-  { tag: [tags.number, tags.bool, tags.atom], color: '#d4b5ff' },
-  { tag: tags.string, color: '#9fcf9f' },
-  { tag: [tags.variableName, tags.name], color: '#e8e4dc' },
-  { tag: [tags.paren, tags.bracket], color: '#aaa59b' },
+  { tag: [tags.number, tags.bool, tags.atom], color: 'var(--code-number)' },
+  { tag: tags.string, color: 'var(--code-string)' },
+  { tag: [tags.variableName, tags.name], color: 'rgb(var(--paper-rgb))' },
+  { tag: [tags.paren, tags.bracket], color: 'var(--code-bracket)' },
 ]);
 
 type HighlightRange = { from: number; to: number; className: string };
@@ -145,31 +147,58 @@ const sourceHighlightField = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 });
 
-const editorTheme = EditorView.theme(
-  {
-    '&': { height: '100%', backgroundColor: '#0f0e0c', color: '#e8e4dc', fontSize: '13px' },
-    '.cm-scroller': { overflow: 'auto', fontFamily: 'inherit', lineHeight: '1.6' },
-    '.cm-content': { caretColor: 'var(--accent)', padding: '12px 0 48px' },
-    '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--accent)' },
-    '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
-      backgroundColor: 'rgb(var(--accent-rgb) / .22)',
+const editorThemeCompartment = new Compartment();
+
+function createEditorTheme(mode: ThemeMode): Extension {
+  return EditorView.theme(
+    {
+      '&': {
+        height: '100%',
+        backgroundColor: 'rgb(var(--ink-rgb))',
+        color: 'rgb(var(--paper-rgb))',
+        fontSize: '13px',
+      },
+      '.cm-scroller': { overflow: 'auto', fontFamily: 'inherit', lineHeight: '1.6' },
+      '.cm-content': { caretColor: 'var(--accent)', padding: '12px 0 48px' },
+      '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--accent)' },
+      '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
+        backgroundColor: 'rgb(var(--accent-rgb) / .22)',
+      },
+      '.cm-gutters': {
+        backgroundColor: 'rgb(var(--panel-rgb))',
+        color: 'rgb(var(--dim-rgb))',
+        borderRight: '1px solid rgb(var(--edge-rgb))',
+      },
+      '.cm-activeLine, .cm-activeLineGutter': {
+        backgroundColor: 'rgb(var(--paper-rgb) / .035)',
+      },
+      '.cm-focused': { outline: 'none' },
+      '.cm-lesson-range': { backgroundColor: 'rgb(var(--accent-rgb) / .07)' },
+      '.cm-trace-node': {
+        backgroundColor: 'rgb(var(--trace-rgb) / .18)',
+        outline: '1px solid rgb(var(--trace-rgb))',
+      },
+      '.cm-lintRange-error': {
+        backgroundImage: 'none',
+        textDecoration: 'underline wavy rgb(var(--error-rgb))',
+      },
+      '.cm-tooltip': {
+        backgroundColor: 'rgb(var(--panel-rgb))',
+        border: '1px solid rgb(var(--edge-rgb))',
+        color: 'rgb(var(--paper-rgb))',
+      },
+      '.cm-panels': {
+        backgroundColor: 'rgb(var(--panel-rgb))',
+        color: 'rgb(var(--paper-rgb))',
+      },
+      '.cm-search input': {
+        backgroundColor: 'rgb(var(--ink-rgb))',
+        color: 'rgb(var(--paper-rgb))',
+      },
     },
-    '.cm-gutters': {
-      backgroundColor: '#181613',
-      color: '#8a857a',
-      borderRight: '1px solid #2a2723',
-    },
-    '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'rgba(232,228,220,.035)' },
-    '.cm-focused': { outline: 'none' },
-    '.cm-lesson-range': { backgroundColor: 'rgb(var(--accent-rgb) / .07)' },
-    '.cm-trace-node': { backgroundColor: 'rgba(143,176,192,.18)', outline: '1px solid #8fb0c0' },
-    '.cm-lintRange-error': { backgroundImage: 'none', textDecoration: 'underline wavy #f87171' },
-    '.cm-tooltip': { backgroundColor: '#181613', border: '1px solid #2a2723', color: '#e8e4dc' },
-    '.cm-panels': { backgroundColor: '#181613', color: '#e8e4dc' },
-    '.cm-search input': { backgroundColor: '#0f0e0c', color: '#e8e4dc' },
-  },
-  { dark: true },
-);
+    { dark: mode === 'dark' },
+  );
+}
 
 function topLevelName(
   node: ReturnType<typeof getImage>['program']['forms'][number],
@@ -203,6 +232,7 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
     shallowEqual,
   );
   const selectedNodeId = useWorkspaceState((current) => current.selectedNodeId);
+  const themeMode = useThemeState((current) => current.mode);
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const editorTextRef = useRef(getState().sourceText);
@@ -229,7 +259,7 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
       lispLanguage,
       syntaxHighlighting(lispHighlightStyle),
       sourceHighlightField,
-      editorTheme,
+      editorThemeCompartment.of(createEditorTheme(getThemeState().mode)),
       EditorView.contentAttributes.of({ 'aria-label': 'model.lisp source editor' }),
       EditorView.lineWrapping,
       keymap.of([
@@ -297,6 +327,14 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
     // The editor is intentionally constructed once; external text is synchronized below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: editorThemeCompartment.reconfigure(createEditorTheme(themeMode)),
+    });
+  }, [themeMode]);
 
   useEffect(
     () =>
@@ -435,7 +473,7 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
       </div>
       {sourceDirty && (
         <div
-          className="border-b border-amber/30 bg-amber/10 px-3 py-1 text-xs text-amber"
+          className="border-b border-amber/30 bg-amber/5 px-3 py-1 text-xs text-amber"
           role="status"
         >
           draft not running — live panels still show the last good model
@@ -448,7 +486,7 @@ export default function SourceEditor({ forms }: { forms: string[] | '*' }) {
         {sourceDiagnostics.length > 0 && (
           <button
             data-testid="editor-diagnostics"
-            className="text-red-400"
+            className="text-error"
             onClick={() => setBottomTab('problems')}
           >
             × {sourceDiagnostics.length} problem{sourceDiagnostics.length === 1 ? '' : 's'}

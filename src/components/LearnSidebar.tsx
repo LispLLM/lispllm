@@ -50,7 +50,7 @@ function FilesView() {
         className="flex min-h-8 w-full items-center gap-2 px-5 text-left text-paper hover:bg-paper/5"
         onClick={() => setEditorFile('kernels')}
       >
-        <span className="text-[#8fb0c0]">λ</span> kernels-ref.lisp
+        <span className="text-trace">λ</span> kernels-ref.lisp
         <span className="ml-auto text-[10px] text-dim">read only</span>
       </button>
       <div className="mt-3 px-3 py-1 text-[11px] uppercase tracking-wider text-dim">checkpoint</div>

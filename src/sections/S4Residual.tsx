@@ -147,7 +147,7 @@ export default function S4Residual({
                 </div>
                 <div className="flex items-center gap-2">
                   <div
-                    className="h-2 bg-[#8fb0c0]/70"
+                    className="h-2 bg-trace/70"
                     style={{ width: `${(c.mlp / maxNorm) * 60}%` }}
                   />
                   <span className="text-dim">‖mlp(x)‖ {c.mlp.toFixed(1)}</span>
@@ -173,7 +173,7 @@ export default function S4Residual({
                   title={sourceDirty ? 'Run or revert the editor draft first' : undefined}
                   className={`h-8 w-14 rounded border text-xs ${
                     on
-                      ? 'border-red-400 bg-red-400/20 text-red-300 line-through'
+                      ? 'border-error bg-error/10 text-error line-through'
                       : 'border-edge text-dim hover:text-paper'
                   }`}
                   onClick={() => toggle(l, h)}

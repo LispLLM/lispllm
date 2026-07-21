@@ -34,9 +34,9 @@ const LINE_STYLES: Record<string, string> = {
   input: 'text-paper',
   value: 'text-amber',
   output: 'text-paper/80',
-  error: 'text-red-400',
+  error: 'text-error',
   ui: 'text-dim',
-  inspect: 'text-[#8fb0c0]',
+  inspect: 'text-trace',
 };
 
 const LINE_PREFIX: Record<string, string> = {
@@ -198,7 +198,7 @@ export default function Repl({ embedded = false }: { embedded?: boolean }) {
           rows={Math.min(6, input.split('\n').length)}
           spellCheck={false}
           placeholder="(help) lists primitives — everything on this page is in scope"
-          className="min-w-0 flex-1 resize-none bg-transparent font-mono text-sm text-paper outline-none placeholder:text-dim/60"
+          className="min-w-0 flex-1 resize-none bg-transparent font-mono text-sm text-paper outline-none placeholder:text-dim"
           onChange={(e) => setReplDraft(e.target.value)}
           onKeyDown={onKeyDown}
           onFocus={() => !embedded && !replOpen && setReplOpen(true)}

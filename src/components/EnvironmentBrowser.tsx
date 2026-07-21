@@ -88,7 +88,7 @@ export default function EnvironmentBrowser() {
             title="Insert this symbol into the REPL"
           >
             <span className="shrink-0 text-paper">{binding.name}</span>
-            <span className="shrink-0 text-[#8fb0c0]">{binding.kind}</span>
+            <span className="shrink-0 text-trace">{binding.kind}</span>
             {binding.preview && <span className="truncate text-dim">{binding.preview}</span>}
           </button>
         ))}

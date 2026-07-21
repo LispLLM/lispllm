@@ -9,7 +9,7 @@ export default function BottomPanel() {
   const bottomTab = useWorkspaceState((current) => current.bottomTab);
   return (
     <section className="flex h-full min-h-0 flex-col bg-panel" data-testid="bottom-panel">
-      <div className="flex min-h-8 items-center border-b border-edge bg-[#141311] text-[11px] uppercase tracking-wider">
+      <div className="flex min-h-8 items-center border-b border-edge bg-chrome text-[11px] uppercase tracking-wider">
         <button
           className={`h-8 border-r border-edge px-3 ${bottomTab === 'repl' ? 'text-paper' : 'text-dim'}`}
           onClick={() => setBottomTab('repl')}
@@ -22,7 +22,7 @@ export default function BottomPanel() {
         >
           Problems{' '}
           {sourceDiagnostics.length > 0 && (
-            <span className="text-red-400">{sourceDiagnostics.length}</span>
+            <span className="text-error">{sourceDiagnostics.length}</span>
           )}
         </button>
         <PanelInfoButton panel={bottomTab} />

@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ACCENT_PRESETS,
   DEFAULT_ACCENT,
+  deriveTheme,
   resetAccentColor,
   setAccentColor,
+  setThemeMode,
   useThemeState,
 } from '../store/theme-store';
 
@@ -13,6 +15,7 @@ export default function AccentPicker() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const rawAccent = useThemeState((current) => current.rawAccent);
   const accent = useThemeState((current) => current.accent);
+  const mode = useThemeState((current) => current.mode);
 
   useEffect(() => {
     if (!open) return;
@@ -41,12 +44,12 @@ export default function AccentPicker() {
         className={`flex h-7 w-7 items-center justify-center rounded hover:bg-paper/5 ${
           open ? 'text-amber' : 'text-paper'
         }`}
-        aria-label="Choose accent color"
+        aria-label="Choose appearance"
         aria-expanded={open}
         aria-controls="accent-picker-popover"
         data-testid="btn-accent"
         onClick={() => setOpen((current) => !current)}
-        title="choose feature color"
+        title={`appearance · ${mode} mode`}
       >
         <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current" aria-hidden="true">
           <path d="M10 1.5a8.5 8.5 0 0 0 0 17h1.35a2.15 2.15 0 0 0 1.06-4.02l-.26-.15c-.46-.26-.27-.96.26-.96h1.18A4.91 4.91 0 0 0 18.5 8.5c0-3.87-3.8-7-8.5-7ZM5.2 10.15a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm1.55-4.2a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm3.8-1.1a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm3.65 1.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Z" />
@@ -56,22 +59,53 @@ export default function AccentPicker() {
         <div
           id="accent-picker-popover"
           role="dialog"
-          aria-label="Accent color"
+          aria-label="Appearance"
           className="absolute right-0 top-8 z-[100] max-h-[calc(100dvh-4rem)] w-72 overflow-y-auto rounded border border-edge bg-panel p-3 text-xs shadow-2xl max-sm:fixed max-sm:left-2 max-sm:right-2 max-sm:top-12 max-sm:w-auto"
           data-testid="accent-picker"
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-semibold text-paper">Feature color</div>
+              <div className="font-semibold text-paper">Appearance</div>
               <div className="mt-0.5 text-[11px] text-dim">Saved on this device</div>
             </div>
             <span
               className="h-7 w-7 rounded-full border border-paper/20"
               style={{ backgroundColor: accent }}
-              aria-label={`Current accent ${rawAccent}`}
+              aria-label={`Applied feature color ${accent}${accent === rawAccent ? '' : `, adjusted from ${rawAccent} for contrast`}`}
             />
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Presets">
+          <div className="mt-3 text-[10px] font-semibold uppercase tracking-widest text-dim">
+            Mode
+          </div>
+          <div className="mt-1 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Mode">
+            {(
+              [
+                { value: 'dark', label: 'Dark', icon: '☾' },
+                { value: 'light', label: 'Light', icon: '☀' },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={mode === option.value}
+                data-testid={`theme-${option.value}`}
+                className={`flex items-center justify-center gap-2 rounded border px-2 py-1.5 ${
+                  mode === option.value
+                    ? 'border-amber bg-amber/10 text-paper'
+                    : 'border-edge text-dim hover:text-paper'
+                }`}
+                onClick={() => setThemeMode(option.value)}
+              >
+                <span aria-hidden="true">{option.icon}</span>
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 text-[10px] font-semibold uppercase tracking-widest text-dim">
+            Feature color
+          </div>
+          <div className="mt-1 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Presets">
             {ACCENT_PRESETS.map((preset) => (
               <button
                 key={preset.name}
@@ -84,7 +118,10 @@ export default function AccentPicker() {
                 data-testid={`accent-${preset.name.toLowerCase()}`}
                 onClick={() => setAccentColor(preset.value)}
               >
-                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: preset.value }} />
+                <span
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: deriveTheme(preset.value, mode).accent }}
+                />
                 {preset.name}
               </button>
             ))}

@@ -12,9 +12,12 @@ export const ACCENT_PRESETS = [
 ] as const;
 
 const STORAGE_KEY = 'lispllm.theme.v1';
-const INK = '#0f0e0c';
-const PANEL = '#181613';
-const PAPER = '#e8e4dc';
+export const THEME_SURFACES = {
+  dark: { canvas: '#0f0e0c', panel: '#181613', chrome: '#141311' },
+  light: { canvas: '#f8f6f2', panel: '#fffdf8', chrome: '#eee9e1' },
+} as const;
+
+export type ThemeMode = 'dark' | 'light';
 
 interface Rgb {
   r: number;
@@ -23,6 +26,7 @@ interface Rgb {
 }
 
 export interface ThemeState {
+  mode: ThemeMode;
   rawAccent: string;
   accent: string;
   foreground: string;
@@ -56,32 +60,47 @@ function luminance(rgb: Rgb): number {
 }
 
 export function contrastRatio(a: string, b: string): number {
-  const first = luminance(toRgb(normalizeHex(a) ?? DEFAULT_ACCENT));
-  const second = luminance(toRgb(normalizeHex(b) ?? INK));
+  const firstHex = normalizeHex(a);
+  const secondHex = normalizeHex(b);
+  if (!firstHex || !secondHex) return 1;
+  const first = luminance(toRgb(firstHex));
+  const second = luminance(toRgb(secondHex));
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
 }
 
-function mixWithWhite(rgb: Rgb, amount: number): Rgb {
+function mixToward(rgb: Rgb, target: number, amount: number): Rgb {
   return {
-    r: rgb.r + (255 - rgb.r) * amount,
-    g: rgb.g + (255 - rgb.g) * amount,
-    b: rgb.b + (255 - rgb.b) * amount,
+    r: rgb.r + (target - rgb.r) * amount,
+    g: rgb.g + (target - rgb.g) * amount,
+    b: rgb.b + (target - rgb.b) * amount,
   };
 }
 
-export function deriveTheme(value: string): ThemeState {
+export function deriveTheme(value: string, mode: ThemeMode = 'dark'): ThemeState {
   const rawAccent = normalizeHex(value) ?? DEFAULT_ACCENT;
   const raw = toRgb(rawAccent);
   let accent = rawAccent;
+  const surfaces = THEME_SURFACES[mode];
+  const target = mode === 'dark' ? 255 : 0;
   for (let step = 0; step <= 100; step++) {
-    const candidate = toHex(mixWithWhite(raw, step / 100));
-    if (Math.min(contrastRatio(candidate, INK), contrastRatio(candidate, PANEL)) >= 4.5) {
+    const candidate = toHex(mixToward(raw, target, step / 100));
+    if (
+      Math.min(
+        contrastRatio(candidate, surfaces.canvas),
+        contrastRatio(candidate, surfaces.panel),
+        contrastRatio(candidate, surfaces.chrome),
+      ) >= 4.5
+    ) {
       accent = candidate;
       break;
     }
   }
-  const foreground = contrastRatio(accent, INK) >= contrastRatio(accent, PAPER) ? INK : PAPER;
-  return { rawAccent, accent, foreground };
+  const foreground = surfaces.canvas;
+  return { mode, rawAccent, accent, foreground };
+}
+
+function isThemeMode(value: unknown): value is ThemeMode {
+  return value === 'dark' || value === 'light';
 }
 
 function load(): ThemeState {
@@ -90,8 +109,12 @@ function load(): ThemeState {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '') as {
       v?: number;
       accent?: unknown;
+      mode?: unknown;
     };
-    return deriveTheme(saved.v === 1 && typeof saved.accent === 'string' ? saved.accent : '');
+    const accent =
+      (saved.v === 1 || saved.v === 2) && typeof saved.accent === 'string' ? saved.accent : '';
+    const mode = saved.v === 2 && isThemeMode(saved.mode) ? saved.mode : 'dark';
+    return deriveTheme(accent, mode);
   } catch {
     return deriveTheme(DEFAULT_ACCENT);
   }
@@ -108,6 +131,11 @@ function rgbChannels(hex: string): string {
 export function applyTheme(theme = state): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  root.dataset.theme = theme.mode;
+  root.style.colorScheme = theme.mode;
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', THEME_SURFACES[theme.mode].chrome);
   root.style.setProperty('--accent-rgb', rgbChannels(theme.accent));
   root.style.setProperty('--accent-foreground-rgb', rgbChannels(theme.foreground));
   root.style.setProperty('--accent', theme.accent);
@@ -115,6 +143,7 @@ export function applyTheme(theme = state): void {
 
 function emit(next: ThemeState): void {
   if (
+    next.mode === state.mode &&
     next.rawAccent === state.rawAccent &&
     next.accent === state.accent &&
     next.foreground === state.foreground
@@ -123,7 +152,10 @@ function emit(next: ThemeState): void {
   state = next;
   applyTheme(state);
   if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: 1, accent: state.rawAccent }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ v: 2, accent: state.rawAccent, mode: state.mode }),
+    );
   }
   for (const listener of listeners) listener();
 }
@@ -145,7 +177,11 @@ export function useThemeState<Selection = ThemeState>(
 }
 
 export function setAccentColor(value: string): void {
-  emit(deriveTheme(value));
+  emit(deriveTheme(value, state.mode));
+}
+
+export function setThemeMode(mode: ThemeMode): void {
+  emit(deriveTheme(state.rawAccent, mode));
 }
 
 export function resetAccentColor(): void {

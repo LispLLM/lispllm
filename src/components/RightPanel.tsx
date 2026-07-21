@@ -24,7 +24,7 @@ export default function RightPanel() {
   const lesson = LESSONS[activeLesson] ?? LESSONS[0];
   return (
     <aside className="flex h-full min-h-0 flex-col bg-panel" data-testid="right-panel">
-      <div className="flex min-h-9 items-center border-b border-edge bg-[#141311]">
+      <div className="flex min-h-9 items-center border-b border-edge bg-chrome">
         <div
           className="flex min-w-0 flex-1 overflow-x-auto"
           role="tablist"

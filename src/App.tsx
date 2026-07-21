@@ -120,9 +120,9 @@ export default function App() {
   if (status === 'error') {
     return (
       <main className="flex h-dvh items-center justify-center bg-ink p-8 font-mono">
-        <div className="max-w-measure rounded border border-red-400/40 bg-panel p-6">
+        <div className="max-w-measure rounded border border-error/40 bg-panel p-6">
           <h1 className="text-paper">model failed to load</h1>
-          <p className="mt-3 text-sm text-red-400">;; {error}</p>
+          <p className="mt-3 text-sm text-error">;; {error}</p>
         </div>
       </main>
     );
@@ -133,7 +133,7 @@ export default function App() {
     const totalMb = totalBytes ? (totalBytes / 1e6).toFixed(1) : '?';
     return (
       <main className="flex h-dvh flex-col bg-ink font-mono" data-testid="loading">
-        <div className="flex h-9 items-center border-b border-edge bg-[#141311] px-3 text-xs text-paper">
+        <div className="flex h-9 items-center border-b border-edge bg-chrome px-3 text-xs text-paper">
           <img src="/logo-48.png" alt="" className="mr-2 h-[18px] w-[18px] rounded-sm" />
           (lispllm)<span className="cursor-blink text-amber">▍</span>
         </div>

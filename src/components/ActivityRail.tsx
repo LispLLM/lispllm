@@ -27,7 +27,7 @@ export default function ActivityRail() {
   );
   return (
     <nav
-      className="z-30 flex w-12 shrink-0 flex-col border-r border-edge bg-[#141311] max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:h-11 max-md:w-auto max-md:flex-row max-md:border-r-0 max-md:border-t"
+      className="z-30 flex w-12 shrink-0 flex-col border-r border-edge bg-chrome max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:h-11 max-md:w-auto max-md:flex-row max-md:border-r-0 max-md:border-t"
       aria-label="workbench views"
       data-testid="activity-rail"
     >

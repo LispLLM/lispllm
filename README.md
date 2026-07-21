@@ -38,11 +38,14 @@ pnpm i && pnpm dev
 - Desktop separators are visible resize grips: drag them, use arrow keys while focused, or
   double-click to restore the default size. Saved widths are fitted to the viewport so the editor
   remains usable; mobile continues to use exclusive panes.
-- The palette beside **REPL** offers six presets and a custom accent. It applies immediately,
-  derives contrast-safe display/foreground colors, and is remembered only on this device.
-- Pane sizes, learning progress, accent choice, the applied source, and the latest draft autosave
+- The **Appearance** palette beside **REPL** offers explicit Dark and Light modes, six feature-color
+  presets, and a custom color. Changes apply immediately; each mode derives contrast-safe applied
+  and foreground colors, adapts the editor and visualizations, and is remembered only on this
+  device.
+- Pane sizes, learning progress, appearance, the applied source, and the latest draft autosave
   locally in separate records. **Share** creates a compact exact-model-state URL, including custom
-  source when it fits the 2 KB URL budget; learning and theme preferences are intentionally omitted.
+  source when it fits the 2 KB URL budget; learning and appearance preferences are intentionally
+  omitted.
 
 ## Train your own (tonight — it's included)
 

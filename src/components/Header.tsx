@@ -48,7 +48,7 @@ export default function Header() {
   );
   const manifest = status === 'ready' ? getImage().checkpoint.manifest : null;
   return (
-    <header className="z-[60] flex h-9 shrink-0 items-center border-b border-edge bg-[#141311] px-2 text-xs">
+    <header className="z-[60] flex h-9 shrink-0 items-center border-b border-edge bg-chrome px-2 text-xs">
       <button
         className="mr-1 hidden h-7 w-7 items-center justify-center text-dim hover:bg-paper/5 hover:text-paper md:flex"
         aria-label="toggle sidebar"

@@ -89,7 +89,7 @@ export default function NextActionBar() {
           : `${exactCompleteCount}/${guide.tasks.length}`}
       </span>
       <button
-        className="shrink-0 rounded border border-amber/50 px-2 py-1 text-[11px] text-amber hover:bg-amber/10 disabled:opacity-50"
+        className="shrink-0 rounded border border-amber/50 px-2 py-1 text-[11px] text-amber hover:bg-amber/5 disabled:opacity-50"
         data-testid="next-action-button"
         disabled={sourceApplying}
         onClick={action}

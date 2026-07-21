@@ -38,7 +38,7 @@ const TraceTreeNode = memo(function TraceTreeNodeComponent({
       <button
         className={`flex min-h-6 w-full items-center truncate text-left text-xs ${
           selected
-            ? 'bg-amber/10 text-amber'
+            ? 'bg-amber/5 text-amber'
             : traced
               ? 'text-paper hover:bg-paper/5'
               : 'text-dim hover:bg-paper/5 hover:text-paper'
